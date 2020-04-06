@@ -4,11 +4,11 @@
 #![allow(non_snake_case)]
 #![allow(unused_attributes)]
 
-mod name_util;
+pub mod name_util;
+//use name_util;
 
 pub static OWNER_KEY:      [u8; 32] = [0x00, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
 pub static SHARD_BITS_KEY: [u8; 32] = [0x01, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
-pub static SHARD_ID_KEY:   [u8; 32] = [0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
 pub static SIBLING_ADDR_PREFIX: u8 = 3;
 
 // constructs keys for user data
@@ -19,6 +19,11 @@ pub fn sibling_addr_key(shard_id: u8) -> StorageKey {
     key.into()
 }
 
+fn shard_id(addr: &Address, shard_mask: u8) -> u8 {
+    let last_byte = addr.as_bytes()[31];
+    last_byte & shard_mask
+}
+
 #[elrond_wasm_derive::callable(SiblingProxy)]
 pub trait Sibling {
     fn register(&self, name: Vec<u8>, address: Address);
@@ -27,7 +32,7 @@ pub trait Sibling {
 #[elrond_wasm_derive::contract(DnsImpl)]
 pub trait Dns {
 
-    fn init(&self, shard_id_bits: i64, shard_id: u8) -> Result<(), &str> {
+    fn init(&self, shard_id_bits: i64) -> Result<(), &str> {
         let owner = self.get_caller();
         self.storage_store_bytes32(&OWNER_KEY.into(), &owner.as_fixed_bytes());
 
@@ -36,12 +41,6 @@ pub trait Dns {
             return Err("shard_id_bits out of range");
         }
         self.storage_store_i64(&SHARD_BITS_KEY.into(), shard_id_bits);
-
-        // save shard id
-        if shard_id >= (1u8 << shard_id_bits) {
-            return Err("shard_id out of range");
-        }
-        self.storage_store_i64(&SHARD_ID_KEY.into(), shard_id as i64);
 
         Ok(())
     }
@@ -65,7 +64,7 @@ pub trait Dns {
     }
 
     fn register(&self, name: Vec<u8>, address: Address) -> Result<(), &str>  {
-        name_util::validate_name(&name)?;
+        name_util::validate_name(&name.as_slice())?;
 
         let (name_hash, name_shard_id) = self.name_hash_shard(&name);
         if name_shard_id == self.getOwnShardId() {
@@ -103,18 +102,19 @@ pub trait Dns {
             return None;
         }
 
-        let resolved_addr = self.storage_load_bytes32(&name_hash.into());
-        if resolved_addr == [0u8; 32] {
+        if self.storage_load_len(&name_hash.into()) == 0 {
             return None;
         }
 
+        let resolved_addr = self.storage_load_bytes32(&name_hash.into());
         Some(resolved_addr.into())
     }
 
     #[private]
     fn name_hash_shard(&self, name: &Vec<u8>) -> ([u8; 32], u8) {
         let name_hash = self.keccak256(&name);
-        let shard = name_hash[31] & self.getShardMask();
+        let shard_mask = self.getShardMask();
+        let shard = name_hash[31] & shard_mask;
         (name_hash, shard)
     }
 
@@ -135,12 +135,17 @@ pub trait Dns {
 
     #[view]
     fn getOwnShardId(&self) -> u8 {
-        self.storage_load_i64(&SHARD_ID_KEY.into()).unwrap() as u8
+        shard_id(&self.get_own_address(), self.getShardMask())
     }
 
     #[view]
     fn nameShard(&self, name: Vec<u8>) -> u8 {
         self.name_hash_shard(&name).1
+    }
+
+    #[view]
+    fn validateName(&self, name: Vec<u8>) -> Result<(), &str> {
+        name_util::validate_name(&name.as_slice())
     }
 
 }
