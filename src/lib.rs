@@ -69,6 +69,10 @@ pub trait Dns {
 
         let (name_hash, name_shard_id) = self.name_hash_shard(&name);
         if name_shard_id == self.getOwnShardId() {
+            if self.resolve_hash(&name_hash, name_shard_id).is_some() {
+                return Err("name already taken");
+            }
+
             self.storage_store_bytes32(&name_hash.into(), &address.as_fixed_bytes());
             return Ok(())
         }
@@ -84,13 +88,35 @@ pub trait Dns {
         Ok(())
     }
 
+    fn resolve(&self, name: Vec<u8>) -> Option<Address> {
+        let (name_hash, name_shard_id) = self.name_hash_shard(&name);
+        if name_shard_id != self.getOwnShardId() {
+            return None;
+        }
+
+        self.resolve_hash(&name_hash, name_shard_id)
+    }
+
+    #[private]
+    fn resolve_hash(&self, name_hash: &[u8; 32], name_shard_id: u8) -> Option<Address> {
+        if name_shard_id != self.getOwnShardId() {
+            return None;
+        }
+
+        let resolved_addr = self.storage_load_bytes32(&name_hash.into());
+        if resolved_addr == [0u8; 32] {
+            return None;
+        }
+
+        Some(resolved_addr.into())
+    }
+
     #[private]
     fn name_hash_shard(&self, name: &Vec<u8>) -> ([u8; 32], u8) {
         let name_hash = self.keccak256(&name);
         let shard = name_hash[31] & self.getShardMask();
         (name_hash, shard)
     }
-
 
     #[view]
     fn getContractOwner(&self) -> Address {
@@ -113,7 +139,7 @@ pub trait Dns {
     }
 
     #[view]
-    fn name_shard(&self, name: Vec<u8>) -> u8 {
+    fn nameShard(&self, name: Vec<u8>) -> u8 {
         self.name_hash_shard(&name).1
     }
 
