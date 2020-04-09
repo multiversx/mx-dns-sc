@@ -1,4 +1,4 @@
-use sc_dns_rs::name_util::*;
+use dns::name_util::*;
 
 #[test]
 fn test_validate_name() {

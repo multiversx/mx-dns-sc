@@ -1,7 +1,7 @@
 
 #![allow(unused_attributes)]
 
-use sc_dns_rs::*;
+use dns::*;
 use elrond_wasm_debug::*;
 use elrond_wasm_debug::HashMap;
 

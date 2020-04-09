@@ -1,5 +1,5 @@
 [package]
-name = "dns"
+name = "dns-deployer"
 version = "0.1.2"
 authors = ["andrei-marinica <andrei.marinica@elrond.com>"]
 edition = "2018"
