@@ -5,19 +5,9 @@
 #![allow(unused_attributes)]
 
 pub mod name_util;
-//use name_util;
+pub mod storage;
 
-pub static OWNER_KEY:      [u8; 32] = [0x00, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
-pub static SHARD_BITS_KEY: [u8; 32] = [0x01, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
-pub static SIBLING_ADDR_PREFIX: u8 = 3;
-
-// constructs keys for user data
-pub fn sibling_addr_key(shard_id: u8) -> StorageKey {
-    let mut key = [0u8; 32];
-    key[0] = SIBLING_ADDR_PREFIX;
-    key[31] = shard_id;
-    key.into()
-}
+use storage::*;
 
 fn shard_id(addr: &Address, shard_mask: u8) -> u8 {
     let last_byte = addr.as_bytes()[31];
@@ -29,12 +19,25 @@ pub trait Sibling {
     fn register(&self, name: Vec<u8>, address: Address);
 }
 
+#[elrond_wasm_derive::callable(UserProxy)]
+pub trait User {
+    #[callback(userStoreCallback)]
+    fn storeIfNotExists(&self,
+        #[callback_arg] name_hash: &H256,
+        key: &StorageKey,
+        name: &Vec<u8>);
+}
+
 #[elrond_wasm_derive::contract(DnsImpl)]
 pub trait Dns {
 
-    fn init(&self, shard_id_bits: i64) -> Result<(), &str> {
+    fn init(&self,
+            user_storage_key: StorageKey,
+            shard_id_bits: i64) -> Result<(), &str> {
+        
         let owner = self.get_caller();
         self.storage_store_bytes32(&OWNER_KEY.into(), &owner.as_fixed_bytes());
+        self.storage_store_bytes32(&USER_STORAGE_KEY_KEY.into(), &user_storage_key.as_fixed_bytes());
 
         // save shard ids length
         if shard_id_bits <= 0 || shard_id_bits > 8 {
@@ -63,17 +66,26 @@ pub trait Dns {
         Ok(())
     }
 
-    fn register(&self, name: Vec<u8>, address: Address) -> Result<(), &str>  {
+    /// Returns: 0 if registration happened ok, 1 if sent to another shard, 2 if failed
+    fn register(&self, name: Vec<u8>, address: Address) -> Result<i32, &str>  {
         name_util::validate_name(&name.as_slice())?;
 
         let (name_hash, name_shard_id) = self.name_hash_shard(&name);
         if name_shard_id == self.getOwnShardId() {
-            if self.resolve_hash(&name_hash, name_shard_id).is_some() {
-                return Err("name already taken");
+            let vs = self.load_value_state(&name_hash);
+            if !vs.is_available() {
+                return Ok(2);
             }
 
-            self.storage_store_bytes32(&name_hash.into(), &address.as_fixed_bytes());
-            return Ok(())
+            self.store_value_state(&name_hash, &ValueState::Pending(address.clone()));
+
+            let user_proxy = contract_proxy!(self, &address, User);
+            user_proxy.storeIfNotExists(
+                &name_hash,
+                &self.getUserStorageKey(),
+                &name);
+
+            return Ok(0)
         }
 
         let sibling_addr = self.storage_load_bytes32(&sibling_addr_key(name_shard_id));
@@ -84,7 +96,24 @@ pub trait Dns {
         let sibling_contract = contract_proxy!(self, &sibling_addr.into(), Sibling);
         sibling_contract.register(name, address);
 
-        Ok(())
+        Ok(1)
+    }
+
+    #[callback]
+    fn userStoreCallback(&self, 
+            success: bool,
+            #[callback_arg] name_hash: H256) {
+
+        if success {
+            // commit
+            let vm = self.load_value_state(&name_hash);
+            if let ValueState::Pending(addr) = vm {
+                self.store_value_state(&name_hash, &ValueState::Committed(addr));
+            }
+        } else {
+            // revert
+            self.store_value_state(&name_hash, &ValueState::None);
+        }
     }
 
     fn resolve(&self, name: Vec<u8>) -> Option<Address> {
@@ -93,29 +122,30 @@ pub trait Dns {
             return None;
         }
 
-        self.resolve_hash(&name_hash, name_shard_id)
+        let vs = self.load_value_state(&name_hash);
+        match vs {
+            ValueState::Committed(address) => Some(address),
+            _ => None
+        }
     }
 
     #[private]
-    fn resolve_hash(&self, name_hash: &[u8; 32], name_shard_id: u8) -> Option<Address> {
-        if name_shard_id != self.getOwnShardId() {
-            return None;
-        }
-
-        if self.storage_load_len(&name_hash.into()) == 0 {
-            return None;
-        }
-
-        let resolved_addr = self.storage_load_bytes32(&name_hash.into());
-        Some(resolved_addr.into())
+    fn load_value_state(&self, key: &StorageKey) -> ValueState {
+        let value_raw = self.storage_load(&key);
+        ValueState::from_bytes(value_raw.as_slice())
     }
 
     #[private]
-    fn name_hash_shard(&self, name: &Vec<u8>) -> ([u8; 32], u8) {
+    fn store_value_state(&self, key: &StorageKey, vs: &ValueState) {
+        self.storage_store(&key, &vs.to_bytes());
+    }
+
+    #[private]
+    fn name_hash_shard(&self, name: &Vec<u8>) -> (StorageKey, u8) {
         let name_hash = self.keccak256(&name);
         let shard_mask = self.getShardMask();
         let shard = name_hash[31] & shard_mask;
-        (name_hash, shard)
+        (name_hash.into(), shard)
     }
 
     #[view]
@@ -136,6 +166,11 @@ pub trait Dns {
     #[view]
     fn getOwnShardId(&self) -> u8 {
         shard_id(&self.get_own_address(), self.getShardMask())
+    }
+
+    #[view]
+    fn getUserStorageKey(&self) -> StorageKey {
+        self.storage_load_bytes32(&USER_STORAGE_KEY_KEY.into()).into()
     }
 
     #[view]
