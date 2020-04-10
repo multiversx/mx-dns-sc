@@ -48,55 +48,28 @@ pub trait Dns {
         Ok(())
     }
 
-    fn setSibling(&self, shard_id: u8, address: Address) -> Result<(), &str> {
-        if self.get_caller() != self.getContractOwner() {
-            return Err("only owner can set sibling"); 
-        }
-
-        if shard_id >= (1u8 << self.getShardIdBits()) {
-            return Err("sibling shard_id out of range");
-        }
-
-        if shard_id == self.getOwnShardId() {
-            return Err("sibling shard_id identical to self");
-        }
-
-        self.storage_store_bytes32(&sibling_addr_key(shard_id), &address.as_fixed_bytes());
-
-        Ok(())
-    }
-
-    /// Returns: 0 if registration happened ok, 1 if sent to another shard, 2 if failed
-    fn register(&self, name: Vec<u8>, address: Address) -> Result<i32, &str>  {
+    fn register(&self, name: Vec<u8>, address: Address) -> Result<(), &str>  {
         name_util::validate_name(&name.as_slice())?;
 
         let (name_hash, name_shard_id) = self.name_hash_shard(&name);
-        if name_shard_id == self.getOwnShardId() {
-            let vs = self.load_value_state(&name_hash);
-            if !vs.is_available() {
-                return Ok(2);
-            }
-
-            self.store_value_state(&name_hash, &ValueState::Pending(address.clone()));
-
-            let user_proxy = contract_proxy!(self, &address, User);
-            user_proxy.storeIfNotExists(
-                &name_hash,
-                &self.getUserStorageKey(),
-                &name);
-
-            return Ok(0)
+        if name_shard_id != self.getOwnShardId() {
+            return Err("name belongs to another shard");
         }
 
-        let sibling_addr = self.storage_load_bytes32(&sibling_addr_key(name_shard_id));
-        if sibling_addr == [0u8; 32] {
-            return Err("missing sibling contract");
+        let vs = self.load_value_state(&name_hash);
+        if !vs.is_available() {
+            return Err("name already taken");
         }
 
-        let sibling_contract = contract_proxy!(self, &sibling_addr.into(), Sibling);
-        sibling_contract.register(name, address);
+        self.store_value_state(&name_hash, &ValueState::Pending(address.clone()));
 
-        Ok(1)
+        let user_proxy = contract_proxy!(self, &address, User);
+        user_proxy.storeIfNotExists(
+            &name_hash,
+            &self.getUserStorageKey(),
+            &name);
+
+        return Ok(())
     }
 
     #[callback]
