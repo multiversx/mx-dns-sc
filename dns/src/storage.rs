@@ -1,6 +1,6 @@
 
 use elrond_wasm::Vec;
-use elrond_wasm::{Address, StorageKey};
+use elrond_wasm::Address;
 
 pub static OWNER_KEY:            [u8; 32] = [0x00, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
 pub static SHARD_BITS_KEY:       [u8; 32] = [0x01, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
@@ -8,14 +8,6 @@ pub static USER_STORAGE_KEY_KEY: [u8; 32] = [0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 pub static SIBLING_ADDR_PREFIX:  u8 = 3;
 
 pub static RESERVED_TOKEN:       u8 = 1;
-
-// constructs keys for user data
-pub fn sibling_addr_key(shard_id: u8) -> StorageKey {
-    let mut key = [0u8; 32];
-    key[0] = SIBLING_ADDR_PREFIX;
-    key[31] = shard_id;
-    key.into()
-}
 
 pub enum ValueState {
     None,
