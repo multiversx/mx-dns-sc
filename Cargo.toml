@@ -2,6 +2,7 @@
 members = [
   "dns",
   "dns/debug",
+  "dns-extra",
   "deployer",
   "user-mock",
 ]
