@@ -34,7 +34,7 @@ pub trait Dns {
     fn init(&self,
             user_storage_key: StorageKey,
             shard_id_bits: u8
-        ) -> Result<(), &str> {
+        ) -> Result<(), SCError> {
         
         let owner = self.get_caller();
         self.storage_store_bytes32(&OWNER_KEY.into(), &owner.as_fixed_bytes());
@@ -42,7 +42,7 @@ pub trait Dns {
 
         // save shard ids length
         if shard_id_bits <= 0 || shard_id_bits > 8 {
-            return Err("shard_id_bits out of range");
+            return sc_error!("shard_id_bits out of range");
         }
         self.storage_store_i64(&SHARD_BITS_KEY.into(), shard_id_bits as i64);
 
@@ -52,10 +52,10 @@ pub trait Dns {
     fn setSiblings(&self,
             #[multi(self.getShardMask() as usize)]
             sibling_addresses: Vec<Address>
-        ) -> Result<(), &str> {
+        ) -> Result<(), SCError> {
         
         if self.get_caller() != self.getContractOwner() {
-            return Err("only owner can set siblings"); 
+            return sc_error!("only owner can set siblings"); 
         }
 
         // save siblings
@@ -63,11 +63,11 @@ pub trait Dns {
         for sibl_addr in sibling_addresses.iter() {
             let sibl_shard_id = shard_id(&sibl_addr, self.getShardMask());
             if sibl_shard_id == own_shard_id {
-                return Err("sibling has the same shard id as self");
+                return sc_error!("sibling has the same shard id as self");
             }
             let sibl_key = sibling_addr_key(sibl_shard_id);
             if self.storage_load_len(&sibl_key) > 0 {
-                return Err("2 siblings have the same shard id");
+                return sc_error!("2 siblings have the same shard id");
             }
 
             self.storage_store_bytes32(&sibl_key, &sibl_addr.as_fixed_bytes());
@@ -77,7 +77,7 @@ pub trait Dns {
     }
 
     /// Returns: 0 if registration happened ok, 1 if sent to another shard, 2 if failed
-    fn register(&self, name: Vec<u8>, address: Address) -> Result<i32, &str>  {
+    fn register(&self, name: Vec<u8>, address: Address) -> Result<i32, SCError>  {
         name_util::validate_name(&name.as_slice())?;
 
         let (name_hash, name_shard_id) = self.name_hash_shard(&name);
@@ -100,7 +100,7 @@ pub trait Dns {
 
         let sibl_key = &sibling_addr_key(name_shard_id);
         if self.storage_load_len(&sibl_key) == 0 {
-            return Err("missing sibling contract");
+            return sc_error!("missing sibling contract");
         } 
         let sibling_addr = self.storage_load_bytes32(&sibl_key);
         let sibling_contract = contract_proxy!(self, &sibling_addr.into(), Sibling);
@@ -189,7 +189,7 @@ pub trait Dns {
     }
 
     #[view]
-    fn validateName(&self, name: Vec<u8>) -> Result<(), &str> {
+    fn validateName(&self, name: Vec<u8>) -> Result<(), SCError> {
         name_util::validate_name(&name.as_slice())
     }
 

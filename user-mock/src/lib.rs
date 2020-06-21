@@ -4,6 +4,8 @@
 #![allow(non_snake_case)]
 #![allow(unused_attributes)]
 
+imports!();
+
 #[elrond_wasm_derive::contract(UserMockImpl)]
 pub trait UserMock {
 
@@ -11,18 +13,18 @@ pub trait UserMock {
     }
 
     fn load(&self, key: &StorageKey) -> Vec<u8> {
-        self.storage_load(key)
+        self.storage_load(key.as_bytes())
     }
 
-    fn storeOverwrite(&self, key: &StorageKey, value: &Vec<u8>) {
-        self.storage_store(key, value);
+    fn storeOverwrite(&self, key: &StorageKey, value: Vec<u8>) {
+        self.storage_store(key.as_bytes(), value.as_slice());
     }
 
     fn storeIfNotExists(&self, key: StorageKey, value: Vec<u8>) -> bool {
-        if self.storage_load_len(&key) > 0 {
+        if self.storage_load_len(key.as_bytes()) > 0 {
             false
         } else {
-            self.storage_store(&key, &value);
+            self.storage_store(key.as_bytes(), value.as_slice());
             true
         }
     }

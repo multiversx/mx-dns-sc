@@ -5,18 +5,15 @@
 #![allow(unused_attributes)]
 
 pub mod name_util;
-pub mod storage;
+pub mod value_state;
 
-use storage::*;
+use value_state::*;
+
+imports!();
 
 fn shard_id(addr: &Address, shard_mask: u8) -> u8 {
     let last_byte = addr.as_bytes()[31];
     last_byte & shard_mask
-}
-
-#[elrond_wasm_derive::callable(SiblingProxy)]
-pub trait Sibling {
-    fn register(&self, name: Vec<u8>, address: Address);
 }
 
 #[elrond_wasm_derive::callable(UserProxy)]
@@ -24,7 +21,7 @@ pub trait User {
     #[callback(userStoreCallback)]
     fn storeIfNotExists(&self,
         #[callback_arg] name_hash: &H256,
-        key: &StorageKey,
+        key: &Vec<u8>,
         name: &Vec<u8>);
 }
 
@@ -32,36 +29,34 @@ pub trait User {
 pub trait Dns {
 
     fn init(&self,
-            user_storage_key: StorageKey,
-            shard_id_bits: i64) -> Result<(), &str> {
+            user_storage_key: Vec<u8>,
+            shard_id_bits: usize) -> Result<(), SCError> {
         
-        let owner = self.get_caller();
-        self.storage_store_bytes32(&OWNER_KEY.into(), &owner.as_fixed_bytes());
-        self.storage_store_bytes32(&USER_STORAGE_KEY_KEY.into(), &user_storage_key.as_fixed_bytes());
+        self._set_owner(&self.get_caller());
+        self._set_user_storage_key(user_storage_key);
 
-        // save shard ids length
-        if shard_id_bits <= 0 || shard_id_bits > 8 {
-            return Err("shard_id_bits out of range");
+        if shard_id_bits > 8 {
+            return sc_error!("shard_id_bits out of range");
         }
-        self.storage_store_i64(&SHARD_BITS_KEY.into(), shard_id_bits);
+        self._set_shard_id_bits(shard_id_bits);
 
         Ok(())
     }
 
-    fn register(&self, name: Vec<u8>, address: Address) -> Result<(), &str>  {
+    fn register(&self, name: Vec<u8>, address: Address) -> Result<(), SCError>  {
         name_util::validate_name(&name.as_slice())?;
 
         let (name_hash, name_shard_id) = self.name_hash_shard(&name);
         if name_shard_id != self.getOwnShardId() {
-            return Err("name belongs to another shard");
+            return sc_error!("name belongs to another shard");
         }
 
-        let vs = self.load_value_state(&name_hash);
+        let vs = self._get_value_state(&name_hash);
         if !vs.is_available() {
-            return Err("name already taken");
+            return sc_error!("name already taken");
         }
 
-        self.store_value_state(&name_hash, &ValueState::Pending(address.clone()));
+        self._set_value_state(&name_hash, &ValueState::Pending(address.clone()));
 
         let user_proxy = contract_proxy!(self, &address, User);
         user_proxy.storeIfNotExists(
@@ -74,19 +69,28 @@ pub trait Dns {
 
     #[callback]
     fn userStoreCallback(&self, 
-            success: bool,
+            result: AsyncCallResult<bool>,
             #[callback_arg] name_hash: H256) {
 
-        if success {
-            // commit
-            let vm = self.load_value_state(&name_hash);
-            if let ValueState::Pending(addr) = vm {
-                self.store_value_state(&name_hash, &ValueState::Committed(addr));
+        match result {
+            AsyncCallResult::Ok(success) => {
+                if success {
+                    // commit
+                    let vm = self._get_value_state(&name_hash);
+                    if let ValueState::Pending(addr) = vm {
+                        self._set_value_state(&name_hash, &ValueState::Committed(addr));
+                    }
+                } else {
+                    // revert
+                    self._set_value_state(&name_hash, &ValueState::None);
+                }
+            },
+            AsyncCallResult::Err(_) => {
+                // also revert
+                self._set_value_state(&name_hash, &ValueState::None);
             }
-        } else {
-            // revert
-            self.store_value_state(&name_hash, &ValueState::None);
         }
+        
     }
 
     fn resolve(&self, name: Vec<u8>) -> Option<Address> {
@@ -95,22 +99,11 @@ pub trait Dns {
             return None;
         }
 
-        let vs = self.load_value_state(&name_hash);
+        let vs = self._get_value_state(&name_hash);
         match vs {
             ValueState::Committed(address) => Some(address),
             _ => None
         }
-    }
-
-    #[private]
-    fn load_value_state(&self, key: &StorageKey) -> ValueState {
-        let value_raw = self.storage_load(&key);
-        ValueState::from_bytes(value_raw.as_slice())
-    }
-
-    #[private]
-    fn store_value_state(&self, key: &StorageKey, vs: &ValueState) {
-        self.storage_store(&key, &vs.to_bytes());
     }
 
     #[private]
@@ -121,15 +114,23 @@ pub trait Dns {
         (name_hash.into(), shard)
     }
 
-    #[view]
-    fn getContractOwner(&self) -> Address {
-        self.storage_load_bytes32(&OWNER_KEY.into()).into()
-    }
+    // STORAGE
 
     #[view]
-    fn getShardIdBits(&self) -> i64 {
-        self.storage_load_i64(&SHARD_BITS_KEY.into()).unwrap()
-    }
+    #[storage_get("owner")]
+    fn getContractOwner(&self) -> Address;
+
+    #[private]
+    #[storage_set("owner")]
+    fn _set_owner(&self, owner: &Address);
+
+    #[view]
+    #[storage_get("shard_id_bits")]
+    fn getShardIdBits(&self) -> usize;
+
+    #[private]
+    #[storage_set("shard_id_bits")]
+    fn _set_shard_id_bits(&self, shard_id_bits: usize);
 
     #[private]
     fn getShardMask(&self) -> u8 {
@@ -142,9 +143,22 @@ pub trait Dns {
     }
 
     #[view]
-    fn getUserStorageKey(&self) -> StorageKey {
-        self.storage_load_bytes32(&USER_STORAGE_KEY_KEY.into()).into()
-    }
+    #[storage_get("user_storage_key")]
+    fn getUserStorageKey(&self) -> Vec<u8>;
+
+    #[private]
+    #[storage_set("user_storage_key")]
+    fn _set_user_storage_key(&self, user_storage_key: Vec<u8>);
+
+    #[private]
+    #[storage_get("value_state")]
+    fn _get_value_state(&self, name_hash: &H256) -> ValueState;
+
+    #[private]
+    #[storage_set("value_state")]
+    fn _set_value_state(&self, name_hash: &H256, value_state: &ValueState);
+
+    // UTILS
 
     #[view]
     fn nameShard(&self, name: Vec<u8>) -> u8 {
@@ -152,7 +166,7 @@ pub trait Dns {
     }
 
     #[view]
-    fn validateName(&self, name: Vec<u8>) -> Result<(), &str> {
+    fn validateName(&self, name: Vec<u8>) -> Result<(), SCError> {
         name_util::validate_name(&name.as_slice())
     }
 
