@@ -12,20 +12,21 @@ pub trait UserMock {
     fn init(&self) {
     }
 
-    fn load(&self, key: &StorageKey) -> Vec<u8> {
-        self.storage_load(key.as_bytes())
-    }
+    #[private]
+    #[storage_get("name_hash")]
+    fn _get_name_hash(&self) -> Vec<u8>;
 
-    fn storeOverwrite(&self, key: &StorageKey, value: Vec<u8>) {
-        self.storage_store(key.as_bytes(), value.as_slice());
-    }
+    #[private]
+    #[storage_set("name_hash")]
+    fn _set_name_hash(&self, name_hash: &[u8]);
 
-    fn storeIfNotExists(&self, key: StorageKey, value: Vec<u8>) -> bool {
-        if self.storage_load_len(key.as_bytes()) > 0 {
-            false
+    fn SetUserName(&self, name_hash: H256) -> Result<(), SCError> {
+        let old_name_hash = self._get_name_hash();
+        if old_name_hash.len() > 0 {
+            sc_error!("user name already set")
         } else {
-            self.storage_store(key.as_bytes(), value.as_slice());
-            true
+            self._set_name_hash(name_hash.as_bytes());
+            Ok(())
         }
     }
 

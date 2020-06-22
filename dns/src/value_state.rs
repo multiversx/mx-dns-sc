@@ -23,7 +23,9 @@ impl Encode for ValueState {
 	#[inline]
 	fn using_top_encoded<F: FnOnce(&[u8])>(&self, f: F) {
         match self {
-            ValueState::None => {},
+            ValueState::None => {
+                f(&[]);
+            },
             ValueState::Pending(addr) => {
                 let mut result = Vec::with_capacity(33);
                 result.push(b'p');

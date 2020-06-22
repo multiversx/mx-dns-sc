@@ -1,4 +1,4 @@
-use dns::name_util::*;
+use dns::name_validation::*;
 
 #[test]
 fn test_validate_name() {

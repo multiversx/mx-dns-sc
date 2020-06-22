@@ -1,6 +1,6 @@
 [package]
 name = "user-mock"
-version = "0.1.2"
+version = "0.2.1"
 authors = ["andrei-marinica <andrei.marinica@elrond.com>"]
 edition = "2018"
 
