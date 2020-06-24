@@ -11,8 +11,6 @@ use value_state::*;
 
 imports!();
 
-const VERSION: &'static str = env!("CARGO_PKG_VERSION");
-
 #[inline]
 fn shard_id(addr: &Address) -> u8 {
     addr.as_bytes()[31]
@@ -30,7 +28,6 @@ pub trait User {
 pub trait Dns {
 
     fn init(&self, registration_cost: &BigUint) {
-        self._set_owner(&self.get_caller());
         self._set_registration_cost(registration_cost);
     }
 
@@ -89,16 +86,16 @@ pub trait Dns {
         
     }
 
-    fn resolve(&self, name: Vec<u8>) -> Option<Address> {
+    fn resolve(&self, name: Vec<u8>) -> OptionalResult<Address> {
         let name_hash = self.nameHash(&name);
         if shard_id(&name_hash) != self.getOwnShardId() {
-            return None;
+            return OptionalResult::None;
         }
 
         let vs = self._get_value_state(&name_hash);
         match vs {
-            ValueState::Committed(address) => Some(address),
-            _ => None
+            ValueState::Committed(address) => OptionalResult::Some(address),
+            _ => OptionalResult::None
         }
     }
 
@@ -108,20 +105,12 @@ pub trait Dns {
             return sc_error!("only owner can claim");
         }
 
-        self.send_tx(&contract_owner, &self.get_own_balance(), "dns claim");
+        self.send_tx(&contract_owner, &self.get_sc_balance(), "dns claim");
 
         Ok(())
     }
 
     // STORAGE
-
-    #[view]
-    #[storage_get("owner")]
-    fn getContractOwner(&self) -> Address;
-
-    #[private]
-    #[storage_set("owner")]
-    fn _set_owner(&self, owner: &Address);
 
     #[view]
     #[storage_get("registration_cost")]
@@ -142,8 +131,13 @@ pub trait Dns {
     // UTILS
 
     #[view]
+    fn getContractOwner(&self) -> Address {
+        self.get_owner_address()
+    }
+
+    #[view]
     fn getOwnShardId(&self) -> u8 {
-        shard_id(&self.get_own_address())
+        shard_id(&self.get_sc_address())
     }
 
     #[view]
@@ -163,7 +157,7 @@ pub trait Dns {
 
     // METADATA
 
-    fn version(&self) -> Vec<u8> {
-        VERSION.as_bytes().to_vec()
+    fn version(&self) -> &'static str {
+        env!("CARGO_PKG_VERSION")
     }
 }
