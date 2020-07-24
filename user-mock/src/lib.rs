@@ -1,7 +1,6 @@
 
 #![no_std]
 #![no_main]
-#![allow(non_snake_case)]
 #![allow(unused_attributes)]
 
 imports!();
@@ -9,18 +8,18 @@ imports!();
 #[elrond_wasm_derive::contract(UserMockImpl)]
 pub trait UserMock {
 
+    #[init]
     fn init(&self) {
     }
 
-    #[private]
     #[storage_get("name_hash")]
     fn _get_name_hash(&self) -> Vec<u8>;
 
-    #[private]
     #[storage_set("name_hash")]
     fn _set_name_hash(&self, name_hash: &[u8]);
 
-    fn SetUserName(&self, name_hash: H256) -> Result<(), SCError> {
+    #[endpoint(SetUserName)]
+    fn set_user_name_endpoint(&self, name_hash: H256) -> SCResult<()> {
         let old_name_hash = self._get_name_hash();
         if old_name_hash.len() > 0 {
             sc_error!("user name already set")

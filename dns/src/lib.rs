@@ -1,7 +1,6 @@
 
 #![no_std]
 #![no_main]
-#![allow(non_snake_case)]
 #![allow(unused_attributes)]
 
 pub mod name_validation;
@@ -11,8 +10,6 @@ use value_state::*;
 
 imports!();
 
-const VERSION: &'static str = env!("CARGO_PKG_VERSION");
-
 #[inline]
 fn shard_id(addr: &Address) -> u8 {
     addr.as_bytes()[31]
@@ -20,7 +17,7 @@ fn shard_id(addr: &Address) -> u8 {
 
 #[elrond_wasm_derive::callable(UserProxy)]
 pub trait User {
-    #[callback(setUserNameCallback)]
+    #[callback(set_user_name_callback)]
     fn SetUserName(&self, 
         #[callback_arg] cb_name_hash: &H256,
         name_hash: &H256);
@@ -29,24 +26,25 @@ pub trait User {
 #[elrond_wasm_derive::contract(DnsImpl)]
 pub trait Dns {
 
+    #[init]
     fn init(&self, registration_cost: &BigUint) {
-        self._set_owner(&self.get_caller());
         self._set_registration_cost(registration_cost);
     }
 
     #[payable]
+    #[endpoint]
     fn register(&self,
             name: Vec<u8>,
-            #[payment] payment: BigUint) -> Result<(), SCError>  {
+            #[payment] payment: BigUint) -> SCResult<()>  {
 
-        name_validation::validate_name(&name.as_slice())?;
+        sc_try!(name_validation::validate_name(&name.as_slice()));
 
-        if payment != self.getRegistrationCost() {
+        if payment != self.get_registration_cost() {
             return sc_error!("should pay exactly the registration cost");
         }
 
-        let name_hash = self.nameHash(&name);
-        if shard_id(&name_hash) != self.getOwnShardId() {
+        let name_hash = self.name_hash(&name);
+        if shard_id(&name_hash) != self.get_own_shard_id() {
             return sc_error!("name belongs to another shard");
         }
 
@@ -67,7 +65,7 @@ pub trait Dns {
     }
 
     #[callback]
-    fn setUserNameCallback(&self, 
+    fn set_user_name_callback(&self, 
             result: AsyncCallResult<()>,
             #[callback_arg] cb_name_hash: H256) {
 
@@ -89,43 +87,37 @@ pub trait Dns {
         
     }
 
-    fn resolve(&self, name: Vec<u8>) -> Option<Address> {
-        let name_hash = self.nameHash(&name);
-        if shard_id(&name_hash) != self.getOwnShardId() {
-            return None;
+    #[view]
+    fn resolve(&self, name: Vec<u8>) -> OptionalResult<Address> {
+        let name_hash = self.name_hash(&name);
+        if shard_id(&name_hash) != self.get_own_shard_id() {
+            return OptionalResult::None;
         }
 
         let vs = self._get_value_state(&name_hash);
         match vs {
-            ValueState::Committed(address) => Some(address),
-            _ => None
+            ValueState::Committed(address) => OptionalResult::Some(address),
+            _ => OptionalResult::None
         }
     }
 
-    fn claim(&self) -> Result<(), SCError>  {
-        let contract_owner = self.getContractOwner();
+    #[endpoint]
+    fn claim(&self) -> SCResult<()>  {
+        let contract_owner = self.get_owner_address();
         if &self.get_caller() != &contract_owner {
             return sc_error!("only owner can claim");
         }
 
-        self.send_tx(&contract_owner, &self.get_own_balance(), "dns claim");
+        self.send_tx(&contract_owner, &self.get_sc_balance(), "dns claim");
 
         Ok(())
     }
 
     // STORAGE
 
-    #[view]
-    #[storage_get("owner")]
-    fn getContractOwner(&self) -> Address;
-
-    #[private]
-    #[storage_set("owner")]
-    fn _set_owner(&self, owner: &Address);
-
-    #[view]
+    #[view(getRegistrationCost)]
     #[storage_get("registration_cost")]
-    fn getRegistrationCost(&self) -> BigUint;
+    fn get_registration_cost(&self) -> BigUint;
 
     #[private]
     #[storage_set("registration_cost")]
@@ -141,29 +133,35 @@ pub trait Dns {
 
     // UTILS
 
-    #[view]
-    fn getOwnShardId(&self) -> u8 {
-        shard_id(&self.get_own_address())
+    #[view(getContractOwner)]
+    fn get_owner_address_endpoint(&self) -> Address {
+        self.get_owner_address()
     }
 
-    #[view]
-    fn nameHash(&self, name: &Vec<u8>) -> H256 {
+    #[view(getOwnShardId)]
+    fn get_own_shard_id(&self) -> u8 {
+        shard_id(&self.get_sc_address())
+    }
+
+    #[view(nameHash)]
+    fn name_hash(&self, name: &Vec<u8>) -> H256 {
         self.keccak256(&name).into()
     }
 
-    #[view]
-    fn nameShard(&self, name: Vec<u8>) -> u8 {
-        shard_id(&self.nameHash(&name))
+    #[view(nameShard)]
+    fn name_shard(&self, name: Vec<u8>) -> u8 {
+        shard_id(&self.name_hash(&name))
     }
  
-    #[view]
-    fn validateName(&self, name: Vec<u8>) -> Result<(), SCError> {
+    #[view(validateName)]
+    fn validate_name(&self, name: Vec<u8>) -> SCResult<()> {
         name_validation::validate_name(&name.as_slice())
     }
 
     // METADATA
 
-    fn version(&self) -> Vec<u8> {
-        VERSION.as_bytes().to_vec()
+    #[view]
+    fn version(&self) -> &'static str {
+        env!("CARGO_PKG_VERSION")
     }
 }
