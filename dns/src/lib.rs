@@ -28,7 +28,7 @@ pub trait Dns {
 
     #[init]
     fn init(&self, registration_cost: &BigUint) {
-        self._set_registration_cost(registration_cost);
+        self.set_registration_cost(registration_cost);
     }
 
     #[payable]
@@ -48,13 +48,13 @@ pub trait Dns {
             return sc_error!("name belongs to another shard");
         }
 
-        let vs = self._get_value_state(&name_hash);
+        let vs = self.get_value_state(&name_hash);
         if !vs.is_available() {
             return sc_error!("name already taken");
         }
 
         let address = self.get_caller();
-        self._set_value_state(&name_hash, &ValueState::Pending(address.clone()));
+        self.set_value_state(&name_hash, &ValueState::Pending(address.clone()));
 
         let user_proxy = contract_proxy!(self, &address, User);
         user_proxy.SetUserName(
@@ -72,16 +72,16 @@ pub trait Dns {
         match result {
             AsyncCallResult::Ok(()) => {
                 // commit
-                let vm = self._get_value_state(&cb_name_hash);
+                let vm = self.get_value_state(&cb_name_hash);
                 if let ValueState::Pending(addr) = vm {
-                    self._set_value_state(&cb_name_hash, &ValueState::Committed(addr));
+                    self.set_value_state(&cb_name_hash, &ValueState::Committed(addr));
                 } else {
-                    self._set_value_state(&cb_name_hash, &ValueState::None);
+                    self.set_value_state(&cb_name_hash, &ValueState::None);
                 }
             },
             AsyncCallResult::Err(_) => {
                 // revert
-                self._set_value_state(&cb_name_hash, &ValueState::None);
+                self.set_value_state(&cb_name_hash, &ValueState::None);
             }
         }
         
@@ -94,7 +94,7 @@ pub trait Dns {
             return OptionalResult::None;
         }
 
-        let vs = self._get_value_state(&name_hash);
+        let vs = self.get_value_state(&name_hash);
         match vs {
             ValueState::Committed(address) => OptionalResult::Some(address),
             _ => OptionalResult::None
@@ -120,13 +120,13 @@ pub trait Dns {
     fn get_registration_cost(&self) -> BigUint;
 
     #[storage_set("registration_cost")]
-    fn _set_registration_cost(&self, registration_cost: &BigUint);
+    fn set_registration_cost(&self, registration_cost: &BigUint);
 
     #[storage_get("value_state")]
-    fn _get_value_state(&self, name_hash: &H256) -> ValueState;
+    fn get_value_state(&self, name_hash: &H256) -> ValueState;
 
     #[storage_set("value_state")]
-    fn _set_value_state(&self, name_hash: &H256, value_state: &ValueState);
+    fn set_value_state(&self, name_hash: &H256, value_state: &ValueState);
 
     // UTILS
 
@@ -155,10 +155,15 @@ pub trait Dns {
         name_validation::validate_name(&name.as_slice())
     }
 
+    // FEATURES
+
+
+
     // METADATA
 
     #[view]
     fn version(&self) -> &'static str {
         env!("CARGO_PKG_VERSION")
     }
+
 }
