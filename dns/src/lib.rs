@@ -119,15 +119,12 @@ pub trait Dns {
     #[storage_get("registration_cost")]
     fn get_registration_cost(&self) -> BigUint;
 
-    #[private]
     #[storage_set("registration_cost")]
     fn _set_registration_cost(&self, registration_cost: &BigUint);
 
-    #[private]
     #[storage_get("value_state")]
     fn _get_value_state(&self, name_hash: &H256) -> ValueState;
 
-    #[private]
     #[storage_set("value_state")]
     fn _set_value_state(&self, name_hash: &H256, value_state: &ValueState);
 
