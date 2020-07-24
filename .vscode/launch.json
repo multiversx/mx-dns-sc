@@ -1,16 +1,21 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug DNS",
+            "name": "Debug dns",
             "preLaunchTask": "dns-debug-build",
-            "program": "${workspaceFolder}/debug/target/debug/dns-debug",
+            "program": "${workspaceFolder}//dns/debug/target/debug/dns-debug",
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug user-mock",
+            "preLaunchTask": "user-mock-debug-build",
+            "program": "${workspaceFolder}//user-mock/debug/target/debug/user-mock-debug",
             "args": [],
             "cwd": "${workspaceFolder}"
         }
