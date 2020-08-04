@@ -91,6 +91,11 @@ pub trait Dns {
     #[view]
     fn resolve(&self, name: Vec<u8>) -> OptionalResult<Address> {
         let name_hash = self.name_hash(&name);
+        self.resolve_from_hash(name_hash) 
+    }
+
+    #[view(resolveFromHash)]
+    fn resolve_from_hash(&self, name_hash: H256) -> OptionalResult<Address> {
         if shard_id(&name_hash) != self.get_own_shard_id() {
             return OptionalResult::None;
         }
