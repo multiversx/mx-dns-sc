@@ -1,6 +1,6 @@
 imports!();
 
-const MIN_LENGTH: usize = 3;
+const MIN_LENGTH: usize = 10;
 
 fn check_name_char(ch: u8) -> bool {
     if ch >= b'a' && ch <= b'z' {
