@@ -37,7 +37,7 @@ pub trait Dns {
             name: Vec<u8>,
             #[payment] payment: BigUint) -> SCResult<()>  {
 
-        sc_try!(self.check_feature_on(&b"register"[..], false));
+        sc_try!(self.check_feature_on(&b"register"[..], true));
 
         sc_try!(name_validation::validate_name(&name.as_slice()));
 
