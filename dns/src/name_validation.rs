@@ -7,15 +7,7 @@ fn check_name_char(ch: u8) -> bool {
         return true;
     }
 
-    if ch >= b'A' && ch <= b'Z' {
-        return true;
-    }
-
     if ch >= b'0' && ch <= b'9' {
-        return true;
-    }
-
-    if ch == b'.' {
         return true;
     }
 
