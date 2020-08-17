@@ -1,6 +1,6 @@
 imports!();
 
-const MIN_LENGTH: usize = 3;
+const MIN_LENGTH: usize = 10;
 
 fn check_name_char(ch: u8) -> bool {
     if ch >= b'a' && ch <= b'z' {
@@ -22,7 +22,7 @@ fn check_name_char(ch: u8) -> bool {
     false
 }
 
-pub fn validate_name(name: &[u8]) -> Result<(), SCError> {
+pub fn validate_name(name: &[u8]) -> SCResult<()> {
     if name.len() < MIN_LENGTH {
         return sc_error!("name is too short");
     }

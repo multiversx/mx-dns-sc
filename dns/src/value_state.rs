@@ -1,5 +1,5 @@
 
-use elrond_wasm::esd_light::*;
+use elrond_wasm::elrond_codec::*;
 use elrond_wasm::Vec;
 use elrond_wasm::Address;
 
@@ -21,7 +21,7 @@ impl ValueState {
 
 impl Encode for ValueState {
 	#[inline]
-	fn using_top_encoded<F: FnOnce(&[u8])>(&self, f: F) {
+	fn using_top_encoded<F: FnOnce(&[u8])>(&self, f: F) -> Result<(), EncodeError> {
         match self {
             ValueState::None => {
                 f(&[]);
@@ -36,6 +36,7 @@ impl Encode for ValueState {
                 f(addr.as_bytes());
             },
         }
+        Ok(())
 	}
 }
 

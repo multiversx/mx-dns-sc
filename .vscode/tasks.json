@@ -4,11 +4,24 @@
         {
             "label": "dns-debug-build",
             "command": "cargo",
-            "args": ["build"],
+            "args": [
+                "build"
+            ],
             "options": {
-                "cwd": "${workspaceFolder}/debug"
+                "cwd": "${workspaceFolder}//dns/debug"
             },
             "type": "shell"
         },
+        {
+            "label": "user-mock-debug-build",
+            "command": "cargo",
+            "args": [
+                "build"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}//user-mock/debug"
+            },
+            "type": "shell"
+        }
     ]
 }
