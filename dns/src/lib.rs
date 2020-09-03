@@ -8,6 +8,7 @@ pub mod name_validation;
 pub mod value_state;
 
 use value_state::*;
+use elrond_wasm_module_features::*;
 
 imports!();
 
@@ -27,6 +28,9 @@ pub trait User {
 #[elrond_wasm_derive::contract(DnsImpl)]
 pub trait Dns {
 
+    #[module(FeaturesModuleImpl)]
+    fn features_module(&self) -> FeaturesModuleImpl<T, BigInt, BigUint>;
+
     #[init]
     fn init(&self, registration_cost: &BigUint) {
         self.set_registration_cost(registration_cost);
@@ -38,7 +42,7 @@ pub trait Dns {
             name: Vec<u8>,
             #[payment] payment: BigUint) -> SCResult<()>  {
 
-        sc_try!(self.check_feature_on(&b"register"[..], true));
+        feature_guard!(self.features_module(), b"register", true);
 
         sc_try!(name_validation::validate_name(&name.as_slice()));
 
@@ -162,33 +166,6 @@ pub trait Dns {
         name_validation::validate_name(&name.as_slice())
     }
 
-    // FEATURES (TODO: extract to standard module)
-
-    #[storage_get("feat:")]
-    fn get_feature_flag(&self, feature_name: FeatureName) -> Option<bool>;
-
-    #[storage_set("feat:")]
-    fn set_feature_flag(&self, feature_name: FeatureName, value: Option<bool>);
-
-    fn check_feature_on(&self, feature_name: &'static [u8], default: bool) -> SCResult<()> {
-        if self.get_feature_flag(FeatureName(feature_name)).unwrap_or(default) {
-            Ok(())
-        } else {
-            let mut msg = feature_name.to_vec();
-            msg.extend_from_slice(&b" currently disabled"[..]);
-            SCResult::Err(SCError::Dynamic(msg))
-        }
-    }
-
-    #[endpoint(setFeatureFlag)]
-    fn set_feature_flag_endpoint(&self, feature_name: Vec<u8>, value: bool) -> SCResult<()> {
-        if self.get_caller() != self.get_owner_address() {
-            return sc_error!("only owner allowed to change features");
-        }
-        self.set_feature_flag(FeatureName(feature_name.as_slice()), Some(value));
-        Ok(())
-    }
-
     // METADATA
 
     #[view]
@@ -196,15 +173,4 @@ pub trait Dns {
         env!("CARGO_PKG_VERSION")
     }
 
-}
-
-pub struct FeatureName<'a>(&'a [u8]);
-
-use elrond_wasm::elrond_codec::*;
-impl<'a> Encode for FeatureName<'a> {
-    #[inline]
-    fn dep_encode_to<O: Output>(&self, dest: &mut O) -> Result<(), EncodeError> {
-        dest.write(&self.0[..]);
-        Result::Ok(())
-    }
 }
