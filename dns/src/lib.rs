@@ -20,7 +20,7 @@ pub trait User {
     #[callback(set_user_name_callback)]
     fn SetUserName(&self, 
         #[callback_arg] cb_name_hash: &H256,
-        name_hash: &H256);
+        name_hash: &[u8]);
 }
 
 #[elrond_wasm_derive::contract(DnsImpl)]
@@ -61,7 +61,7 @@ pub trait Dns {
         let user_proxy = contract_proxy!(self, &address, User);
         user_proxy.SetUserName(
             &name_hash,
-            &name_hash);
+            &name);
 
         return Ok(())
     }
