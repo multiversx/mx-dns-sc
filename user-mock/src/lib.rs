@@ -1,6 +1,7 @@
 
 #![no_std]
 #![allow(unused_attributes)]
+#![allow(clippy::string_lit_as_bytes)]
 
 imports!();
 
@@ -20,7 +21,7 @@ pub trait UserMock {
     #[endpoint(SetUserName)]
     fn set_user_name_endpoint(&self, name: Vec<u8>) -> SCResult<()> {
         let old_name = self.get_name();
-        if old_name.len() > 0 {
+        if old_name.is_empty() {
             sc_error!("user name already set")
         } else {
             self.set_name(name.as_slice());

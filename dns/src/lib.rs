@@ -1,6 +1,8 @@
 
 #![no_std]
 #![allow(unused_attributes)]
+#![allow(clippy::string_lit_as_bytes)]
+#![allow(clippy::ptr_arg)]
 
 pub mod name_validation;
 pub mod value_state;
@@ -62,7 +64,7 @@ pub trait Dns {
             &name_hash,
             &name);
 
-        return Ok(())
+        Ok(())
     }
 
     #[callback]
@@ -109,7 +111,7 @@ pub trait Dns {
     #[endpoint]
     fn claim(&self) -> SCResult<()>  {
         let contract_owner = self.get_owner_address();
-        if &self.get_caller() != &contract_owner {
+        if self.get_caller() != contract_owner {
             return sc_error!("only owner can claim");
         }
 
