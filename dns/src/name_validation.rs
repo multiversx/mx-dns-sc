@@ -27,3 +27,32 @@ pub fn validate_name(name: &[u8]) -> SCResult<()> {
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_validate_name() {
+        // ok
+        assert!(validate_name(&*b"aaaaaaaaaa").is_ok());
+        assert!(validate_name(&*b"zzzzzzzzzz").is_ok());
+        assert!(validate_name(&*b"0000000000").is_ok());
+        assert!(validate_name(&*b"9999999999").is_ok());
+        assert!(validate_name(&*b"coolname0001").is_ok());
+
+        // too short
+        assert!(!validate_name(&*b"").is_ok()); 
+        assert!(!validate_name(&*b"aaaaaaaaa").is_ok());
+
+        // lowercase only
+        assert!(!validate_name(&*b"Aaaaaaaaaa").is_ok());
+
+        // no other chars
+        assert!(!validate_name(&*b"Aaaaa.aaaa").is_ok()); 
+        assert!(!validate_name(&*b"Aaaaa@aaaa").is_ok());
+        assert!(!validate_name(&*b"Aaaaa+aaaa").is_ok());
+        assert!(!validate_name(&*b"Aaaaa-aaaa").is_ok());
+        assert!(!validate_name(&*b"Aaaaa_aaaa").is_ok());  
+    }
+}

@@ -1,6 +1,5 @@
 
 #![no_std]
-#![no_main]
 #![allow(unused_attributes)]
 
 pub mod name_validation;
@@ -20,7 +19,7 @@ pub trait User {
     #[callback(set_user_name_callback)]
     fn SetUserName(&self, 
         #[callback_arg] cb_name_hash: &H256,
-        name_hash: &[u8]);
+        name: &Vec<u8>);
 }
 
 #[elrond_wasm_derive::contract(DnsImpl)]
