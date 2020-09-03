@@ -5,11 +5,11 @@ Elrond DNS smart contract, written in Rust
 
 # Build
 
-Run
+Temporarily until erdpy is updated, use the following to build:
 ```
-./compile-wasm.sh 
+./build-wasm.sh 
 ```
-in root, it will produce delegation.wasm and staking-mock.wasm (a dummy used in tests instead of a staking contract).
+It will produce dns.wasm and user-mock.wasm (a dummy used in tests instead of the user API).
 
 # Rust configuration
 
@@ -17,7 +17,6 @@ in root, it will produce delegation.wasm and staking-mock.wasm (a dummy used in 
 rustup toolchain install nightly
 rustup target add wasm32-unknown-unknown
 rustc --version
-cargo install wasm-snip
 ```
 
 # Advanced

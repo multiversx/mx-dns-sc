@@ -3,6 +3,7 @@ use elrond_wasm::elrond_codec::*;
 use elrond_wasm::Vec;
 use elrond_wasm::Address;
 
+#[derive(PartialEq, Debug)]
 pub enum ValueState {
     None,
     Pending(Address),
