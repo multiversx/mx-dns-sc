@@ -15,8 +15,8 @@ debug = false
 panic = "abort"
 
 [dependencies]
-user-mock = { path = ".." }
-elrond-wasm-output = { version="0.6.0", features=["wasm-output-mode"]}
+user-mock = { path = "..", features=["wasm-output-mode"], default-features = false }
+elrond-wasm-output = { version="0.7.1", features=["wasm-output-mode"] }
 
 # Prevent this from interfering with workspaces
 [workspace]

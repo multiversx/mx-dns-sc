@@ -4,6 +4,11 @@
 #![allow(clippy::string_lit_as_bytes)]
 #![allow(clippy::ptr_arg)]
 
+#[cfg(feature = "elrond-wasm-module-features-default")]
+pub use elrond_wasm_module_features_default as elrond_wasm_module_features;
+#[cfg(feature = "elrond-wasm-module-features-wasm")]
+pub use elrond_wasm_module_features_wasm as elrond_wasm_module_features;
+
 pub mod name_validation;
 pub mod value_state;
 

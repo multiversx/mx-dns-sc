@@ -15,8 +15,8 @@ debug = false
 panic = "abort"
 
 [dependencies]
-dns = { path = ".." }
-elrond-wasm-output = { version="0.6.0", features=["wasm-output-mode"]}
+dns = { path = "..", features=["wasm-output-mode"], default-features = false }
+elrond-wasm-output = { version="0.7.1", features=["wasm-output-mode"] }
 
 # Prevent this from interfering with workspaces
 [workspace]
