@@ -42,17 +42,17 @@ mod tests {
         assert!(validate_name(&*b"coolname0001").is_ok());
 
         // too short
-        assert!(!validate_name(&*b"").is_ok()); 
+        assert!(!validate_name(&*b"").is_ok());
         assert!(!validate_name(&*b"aaaaaaaaa").is_ok());
 
         // lowercase only
         assert!(!validate_name(&*b"Aaaaaaaaaa").is_ok());
 
         // no other chars
-        assert!(!validate_name(&*b"Aaaaa.aaaa").is_ok()); 
+        assert!(!validate_name(&*b"Aaaaa.aaaa").is_ok());
         assert!(!validate_name(&*b"Aaaaa@aaaa").is_ok());
         assert!(!validate_name(&*b"Aaaaa+aaaa").is_ok());
         assert!(!validate_name(&*b"Aaaaa-aaaa").is_ok());
-        assert!(!validate_name(&*b"Aaaaa_aaaa").is_ok());  
+        assert!(!validate_name(&*b"Aaaaa_aaaa").is_ok());
     }
 }

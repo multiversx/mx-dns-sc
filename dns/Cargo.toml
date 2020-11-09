@@ -15,12 +15,12 @@ default = [
 ]
 
 [dependencies]
-elrond-wasm-module-features-wasm = { package = "elrond-wasm-module-features", version = "0.7.1", features = ["wasm-output-mode"], default-features = false, optional = true }
-elrond-wasm-module-features-default = { package = "elrond-wasm-module-features", version = "0.7.1", optional = true }
+elrond-wasm-module-features-wasm = { package = "elrond-wasm-module-features", version = "0.9.6", features = ["wasm-output-mode"], default-features = false, optional = true }
+elrond-wasm-module-features-default = { package = "elrond-wasm-module-features", version = "0.9.6", optional = true }
 
-elrond-wasm = "0.7.1"
-elrond-wasm-derive = "0.7.1"
-elrond-wasm-node = { version = "0.7.1", optional = true }
+elrond-wasm = "0.9.6"
+elrond-wasm-derive = "0.9.6"
+elrond-wasm-node = { version = "0.9.6", optional = true }
 
 [dev-dependencies]
-elrond-wasm-debug = "0.7.1"
+elrond-wasm-debug = "0.9.6"
