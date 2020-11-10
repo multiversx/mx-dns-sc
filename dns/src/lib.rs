@@ -1,14 +1,18 @@
-
 #![no_std]
 #![allow(unused_attributes)]
 #![allow(clippy::string_lit_as_bytes)]
 #![allow(clippy::ptr_arg)]
 
+#[cfg(feature = "elrond-wasm-module-features-default")]
+pub use elrond_wasm_module_features_default as elrond_wasm_module_features;
+#[cfg(feature = "elrond-wasm-module-features-wasm")]
+pub use elrond_wasm_module_features_wasm as elrond_wasm_module_features;
+
 pub mod name_validation;
 pub mod value_state;
 
-use value_state::*;
 use elrond_wasm_module_features::*;
+use value_state::*;
 
 imports!();
 
@@ -20,14 +24,11 @@ fn shard_id(addr: &Address) -> u8 {
 #[elrond_wasm_derive::callable(UserProxy)]
 pub trait User {
     #[callback(set_user_name_callback)]
-    fn SetUserName(&self, 
-        #[callback_arg] cb_name_hash: &H256,
-        name: &Vec<u8>);
+    fn SetUserName(&self, #[callback_arg] cb_name_hash: &H256, name: &BoxedBytes);
 }
 
 #[elrond_wasm_derive::contract(DnsImpl)]
 pub trait Dns {
-
     #[module(FeaturesModuleImpl)]
     fn features_module(&self) -> FeaturesModuleImpl<T, BigInt, BigUint>;
 
@@ -38,19 +39,16 @@ pub trait Dns {
 
     #[payable]
     #[endpoint]
-    fn register(&self,
-            name: Vec<u8>,
-            #[payment] payment: BigUint) -> SCResult<()>  {
-
+    fn register(&self, name: BoxedBytes, #[payment] payment: BigUint) -> SCResult<()> {
         feature_guard!(self.features_module(), b"register", true);
 
-        sc_try!(name_validation::validate_name(&name.as_slice()));
+        sc_try!(name_validation::validate_name(name.as_slice()));
 
         if payment != self.get_registration_cost() {
             return sc_error!("should pay exactly the registration cost");
         }
 
-        let name_hash = self.name_hash(&name);
+        let name_hash = self.name_hash(name.as_slice());
         if shard_id(&name_hash) != self.get_own_shard_id() {
             return sc_error!("name belongs to another shard");
         }
@@ -64,18 +62,17 @@ pub trait Dns {
         self.set_value_state(&name_hash, &ValueState::Pending(address.clone()));
 
         let user_proxy = contract_proxy!(self, &address, User);
-        user_proxy.SetUserName(
-            &name_hash,
-            &name);
+        user_proxy.SetUserName(&name_hash, &name);
 
         Ok(())
     }
 
     #[callback]
-    fn set_user_name_callback(&self, 
-            result: AsyncCallResult<()>,
-            #[callback_arg] cb_name_hash: H256) {
-
+    fn set_user_name_callback(
+        &self,
+        result: AsyncCallResult<()>,
+        #[callback_arg] cb_name_hash: H256,
+    ) {
         match result {
             AsyncCallResult::Ok(()) => {
                 // commit
@@ -85,7 +82,7 @@ pub trait Dns {
                 } else {
                     self.set_value_state(&cb_name_hash, &ValueState::None);
                 }
-            },
+            }
             AsyncCallResult::Err(_) => {
                 // revert
                 self.set_value_state(&cb_name_hash, &ValueState::None);
@@ -94,9 +91,9 @@ pub trait Dns {
     }
 
     #[view]
-    fn resolve(&self, name: Vec<u8>) -> OptionalResult<Address> {
-        let name_hash = self.name_hash(&name);
-        self.resolve_from_hash(name_hash) 
+    fn resolve(&self, name: &[u8]) -> OptionalResult<Address> {
+        let name_hash = self.name_hash(name);
+        self.resolve_from_hash(name_hash)
     }
 
     #[view(resolveFromHash)]
@@ -108,12 +105,12 @@ pub trait Dns {
         let vs = self.get_value_state(&name_hash);
         match vs {
             ValueState::Committed(address) => OptionalResult::Some(address),
-            _ => OptionalResult::None
+            _ => OptionalResult::None,
         }
     }
 
     #[endpoint]
-    fn claim(&self) -> SCResult<()>  {
+    fn claim(&self) -> SCResult<()> {
         let contract_owner = self.get_owner_address();
         if self.get_caller() != contract_owner {
             return sc_error!("only owner can claim");
@@ -152,18 +149,18 @@ pub trait Dns {
     }
 
     #[view(nameHash)]
-    fn name_hash(&self, name: &Vec<u8>) -> H256 {
-        self.keccak256(&name).into()
+    fn name_hash(&self, name: &[u8]) -> H256 {
+        self.keccak256(name).into()
     }
 
     #[view(nameShard)]
-    fn name_shard(&self, name: Vec<u8>) -> u8 {
+    fn name_shard(&self, name: &[u8]) -> u8 {
         shard_id(&self.name_hash(&name))
     }
- 
+
     #[view(validateName)]
-    fn validate_name(&self, name: Vec<u8>) -> SCResult<()> {
-        name_validation::validate_name(&name.as_slice())
+    fn validate_name(&self, name: &[u8]) -> SCResult<()> {
+        name_validation::validate_name(name)
     }
 
     // METADATA
@@ -172,5 +169,4 @@ pub trait Dns {
     fn version(&self) -> &'static str {
         env!("CARGO_PKG_VERSION")
     }
-
 }

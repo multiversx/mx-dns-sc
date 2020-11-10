@@ -4,9 +4,41 @@ version = "0.3.0"
 authors = ["andrei-marinica <andrei.marinica@elrond.com>"]
 edition = "2018"
 
-[dependencies]
-elrond-wasm = "0.6.0"
-elrond-wasm-node = "0.6.0"
-elrond-wasm-derive = "0.6.0"
+[features]
+wasm-output-mode = [
+    "elrond-wasm-node",
+    "elrond-wasm-module-features-wasm",
+]
 
-elrond-wasm-module-features = "0.6.0"
+default = [
+    "elrond-wasm-module-features-default",
+]
+
+[dependencies.elrond-wasm-module-features-wasm]
+package = "elrond-wasm-module-features"
+version = "0.9.6"
+features = ["wasm-output-mode"]
+default-features = false
+optional = true
+
+[dependencies.elrond-wasm-module-features-default]
+package = "elrond-wasm-module-features"
+version = "0.9.6"
+optional = true
+
+[dependencies.elrond-wasm]
+version = "0.9.6"
+
+[dependencies.elrond-wasm-derive]
+version = "0.9.6"
+
+[dependencies.elrond-wasm-node]
+version = "0.9.6"
+optional = true
+
+[dev-dependencies.elrond-wasm-debug]
+version = "0.9.6"
+
+[dev-dependencies.user-mock]
+path = "../user-mock"
+
