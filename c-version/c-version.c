@@ -38,10 +38,6 @@ void _hexEncode(byte *data, int dataLen, byte *result);
 
 const ADDRESS ZERO_32_BYTE_ARRAY = { 0 };
 
-// TEMPORARY SOLUTION
-// Will have to find something to use as ID to not have conflicts between multiple callbacks
-byte callBackValueKey[32] = { 'c', 'a', 'l', 'l', 'b', 'a', 'c', 'k', 'k', 'e', 'y' };
-
 ERROR_MSG(ERR_NAME_TOO_SHORT, "name is too short");
 ERROR_MSG(ERR_CHARACTER_NOT_ALLOWED, "character not allowed");
 ERROR_MSG(ERR_WRONG_FEE, "should pay exactly the registration cost");
@@ -86,6 +82,7 @@ void registerNameEndpoint()
     Value value = {};
     ADDRESS callerAddress = {};
 
+    HASH txHash = { };
     byte callValueAsync[32] = { 0 };
     byte dataAsync[200] = { };
     int dataLen;
@@ -124,8 +121,9 @@ void registerNameEndpoint()
     _copy(value.address, callerAddress, sizeof(ADDRESS));
     _storeValue(nameHash, &value);
 
+    getOriginalTxHash(txHash);
    // store "fake" callback arg in storage and retrieve in callback
-    storageStore(callBackValueKey, 32, nameHash, sizeof(HASH));
+    storageStore(txHash, sizeof(HASH), nameHash, sizeof(HASH));
 
     dataLen = _constructAsyncCallData("SetUserName", 11, &name, &nameLen, 1, dataAsync);
     asyncCall(callerAddress, ZERO_32_BYTE_ARRAY, dataAsync, dataLen);
@@ -417,14 +415,16 @@ void _hexEncode(byte *data, int dataLen, byte *result)
 void callBack()
 {
     int result;
-    HASH nameHash;
-    Value value;
+    HASH txHash = {};
+    HASH nameHash = {};
+    Value value = {};
 
     getArgument(0, &result);
 
     if (result == 0)
     {
-        storageLoad(callBackValueKey, 32, nameHash);
+        getOriginalTxHash(txHash);
+        storageLoad(txHash, sizeof(HASH), nameHash);
         _loadValue(nameHash, &value);
 
         if (value.state == Pending)
@@ -444,4 +444,7 @@ void callBack()
     }
     
     _storeValue(nameHash, &value);
+
+    // clear callback stored value
+    storageStore(txHash, sizeof(HASH), NULL, 0);
 }
