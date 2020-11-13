@@ -77,7 +77,7 @@ void registerNameEndpoint()
     byte name[100] = {};
     int nameLen;
     HASH nameHash = {};
-    byte errMsg;
+    byte *errMsg;
 
     Value value = {};
     ADDRESS callerAddress = {};

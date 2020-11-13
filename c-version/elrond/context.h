@@ -9,6 +9,7 @@ int getShardOfAddress(byte *address);
 int isSmartContract(byte *address);
 
 // Call-related functions
+void getOriginalTxHash(byte *txHash);
 void getCaller(byte *callerAddress);
 int getFunction(byte *function);
 int getCallValue(byte *result);
