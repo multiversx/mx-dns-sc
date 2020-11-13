@@ -125,7 +125,7 @@ void registerNameEndpoint()
     _storeValue(nameHash, &value);
 
    // store "fake" callback arg in storage and retrieve in callback
-    storageStore(callBackValueKey, 32, name, nameLen);
+    storageStore(callBackValueKey, 32, nameHash, sizeof(HASH));
 
     dataLen = _constructAsyncCallData("SetUserName", 11, &name, &nameLen, 1, dataAsync);
     asyncCall(callerAddress, ZERO_32_BYTE_ARRAY, dataAsync, dataLen);
@@ -417,6 +417,31 @@ void _hexEncode(byte *data, int dataLen, byte *result)
 void callBack()
 {
     int result;
+    HASH nameHash;
+    Value value;
 
-    // TO DO
+    getArgument(0, &result);
+
+    if (result == 0)
+    {
+        storageLoad(callBackValueKey, 32, nameHash);
+        _loadValue(nameHash, &value);
+
+        if (value.state == Pending)
+        {
+            value.state = Commited;
+        }
+        else
+        {
+            value.state = None;
+            _copy(value.address, ZERO_32_BYTE_ARRAY, sizeof(ADDRESS));
+        }
+    }
+    else
+    {
+        value.state = None;
+            _copy(value.address, ZERO_32_BYTE_ARRAY, sizeof(ADDRESS));
+    }
+    
+    _storeValue(nameHash, &value);
 }
