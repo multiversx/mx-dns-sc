@@ -420,13 +420,12 @@ void callBack()
     Value value = {};
 
     getArgument(0, &result);
+    getOriginalTxHash(txHash);
+    storageLoad(txHash, sizeof(HASH), nameHash);
+    _loadValue(nameHash, &value);
 
     if (result == 0)
     {
-        getOriginalTxHash(txHash);
-        storageLoad(txHash, sizeof(HASH), nameHash);
-        _loadValue(nameHash, &value);
-
         if (value.state == Pending)
         {
             value.state = Commited;
