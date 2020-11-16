@@ -1,1 +1,10 @@
 init
+registerNameEndpoint
+claim
+getOwnerAddressView
+getOwnShardIdView
+nameHashView
+nameShardView
+validateNameView
+resolveView
+resolveFromHashView

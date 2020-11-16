@@ -36,7 +36,14 @@ int _constructAsyncCallData(byte *funcName, int funcLen, byte **args, int *argsL
 byte _halfByteToHexDigit(byte num);
 void _hexEncode(byte *data, int dataLen, byte *result);
 
-const ADDRESS ZERO_32_BYTE_ARRAY = { 0 };
+ADDRESS ZERO_32_BYTE_ARRAY = { 0 };
+
+byte SET_USER_NAME_FUNCTION[] = "SetUserName";
+const int SET_USER_NAME_LEN = 11;
+byte CLAIM_MSG[] = "dns claim";
+const int CLAIM_MSG_LEN = 9;
+byte OK_RETURN_MSG[] = "ok";
+const int OK_RETURN_MSG_LEN = 2;
 
 ERROR_MSG(ERR_NAME_TOO_SHORT, "name is too short");
 ERROR_MSG(ERR_CHARACTER_NOT_ALLOWED, "character not allowed");
@@ -125,7 +132,8 @@ void registerNameEndpoint()
    // store "fake" callback arg in storage and retrieve in callback
     storageStore(txHash, sizeof(HASH), nameHash, sizeof(HASH));
 
-    dataLen = _constructAsyncCallData("SetUserName", 11, &name, &nameLen, 1, dataAsync);
+    dataLen = _constructAsyncCallData(SET_USER_NAME_FUNCTION, SET_USER_NAME_LEN, 
+        (byte**)&name, &nameLen, 1, dataAsync);
     asyncCall(callerAddress, ZERO_32_BYTE_ARRAY, dataAsync, dataLen);
 }
 
@@ -148,9 +156,9 @@ void claim()
 
     getSCAddress(scAddress);
     getExternalBalance(scAddress, balance);
-    transferValue(contractOwner, balance, "dns claim", 10);
+    transferValue(contractOwner, balance, CLAIM_MSG, CLAIM_MSG_LEN);
 
-    finish("ok", 2);
+    finish(OK_RETURN_MSG, OK_RETURN_MSG_LEN);
 }
 
 // view functions
@@ -231,7 +239,7 @@ void validateNameView()
         signalError(errMsg, sizeof(errMsg) - 1);
     }
 
-    finish("ok", 2);
+    finish(OK_RETURN_MSG, OK_RETURN_MSG_LEN);
 }
 
 // Args:
@@ -343,12 +351,12 @@ bool _equal(byte *op1, byte *op2, int len)
 
 void _loadValue(HASH key, Value *value)
 {
-    storageLoad(key, sizeof(HASH), value);
+    storageLoad(key, sizeof(HASH), (byte*)value);
 }
 
 void _storeValue(HASH key, Value *value)
 {
-    storageStore(key, sizeof(HASH), value, sizeof(Value));
+    storageStore(key, sizeof(HASH), (byte*)value, sizeof(Value));
 }
 
 void _resolveFromHash(HASH nameHash, ADDRESS result)
@@ -370,13 +378,14 @@ int _constructAsyncCallData(byte *funcName, int funcLen, byte **args, int *argsL
     int i;
     int dataIndex = 0;
     byte hexEncodedData[1000] = { };
+    byte argDelimiter[1] = "@";
 
     _copy(data, funcName, funcLen);
     dataIndex += funcLen;
 
     for (i = 0; i < nrArgs; i++)
     {
-        _copyRange(data, "@", dataIndex, 0, 1);
+        _copyRange(data, argDelimiter, dataIndex, 0, 1);
         dataIndex++;
 
         _hexEncode(args[i], argsLen[i], hexEncodedData);
@@ -414,15 +423,20 @@ void _hexEncode(byte *data, int dataLen, byte *result)
 // second arg: data passed by finish() in other contract OR error message
 void callBack()
 {
+    // return code is i32
+    byte resultAsBytes[4] = {};
     int result;
     HASH txHash = {};
     HASH nameHash = {};
     Value value = {};
 
-    getArgument(0, &result);
+    getArgument(0, resultAsBytes);
     getOriginalTxHash(txHash);
     storageLoad(txHash, sizeof(HASH), nameHash);
     _loadValue(nameHash, &value);
+
+    // return code fits in one byte, others will be 0
+    result = (int)resultAsBytes[3];
 
     if (result == 0)
     {
