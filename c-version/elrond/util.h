@@ -9,6 +9,10 @@
     const int var##_LEN = sizeof str - 1;\
     byte var[var##_LEN + 1] = str;
 
+#define GENERAL_MSG(var, str) \
+    const int var##_LEN = sizeof str - 1;\
+    byte var[var##_LEN + 1] = str;
+
 #define SIGNAL_ERROR(var) signalError(var, var##_LEN);
 
 ERROR_MSG(ERR_NUM_ARGS, "wrong number of arguments")

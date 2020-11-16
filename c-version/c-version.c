@@ -23,27 +23,25 @@ typedef struct
     ADDRESS address;
 } Value;
 
-byte* _validateName(byte *name, int len);
-void _hashName(byte *name, int nameLen, HASH result);
+byte* _validateName(const byte *name, int len);
+void _hashName(const byte *name, int nameLen, HASH result);
 int _getOwnShardId();
-void _copy(byte *dest, byte *source, int len);
-void _copyRange(byte *dest, byte *src, int destStart, int srcStart, int len);
-bool _equal(byte *op1, byte *op2, int len);
-void _loadValue(HASH key, Value *value);
-void _storeValue(HASH key, Value *value);
-void _resolveFromHash(HASH nameHash, ADDRESS result);
-int _constructAsyncCallData(byte *funcName, int funcLen, byte **args, int *argsLen, int nrArgs, byte *data);
+void _copy(byte *dest, const byte *source, int len);
+void _copyRange(byte *dest, const byte *src, int destStart, int srcStart, int len);
+bool _equal(const byte *op1, const byte *op2, int len);
+void _loadValue(const HASH key, Value *value);
+void _storeValue(const HASH key, const Value *value);
+void _resolveFromHash(const HASH nameHash, ADDRESS result);
+int _constructAsyncCallData(const byte *funcName, int funcLen, 
+    const byte **args, const int *argsLen, int nrArgs, byte *data);
 byte _halfByteToHexDigit(byte num);
-void _hexEncode(byte *data, int dataLen, byte *result);
+void _hexEncode(const byte *data, int dataLen, byte *result);
 
-ADDRESS ZERO_32_BYTE_ARRAY = { 0 };
+const ADDRESS ZERO_32_BYTE_ARRAY = { 0 };
 
-byte SET_USER_NAME_FUNCTION[] = "SetUserName";
-const int SET_USER_NAME_LEN = 11;
-byte CLAIM_MSG[] = "dns claim";
-const int CLAIM_MSG_LEN = 9;
-byte OK_RETURN_MSG[] = "ok";
-const int OK_RETURN_MSG_LEN = 2;
+GENERAL_MSG(SET_USER_NAME_FUNCTION, "SetUserName");
+GENERAL_MSG(CLAIM_MSG, "dns claim");
+GENERAL_MSG(OK_RETURN_MSG, "ok");
 
 ERROR_MSG(ERR_NAME_TOO_SHORT, "name is too short");
 ERROR_MSG(ERR_CHARACTER_NOT_ALLOWED, "character not allowed");
@@ -132,8 +130,8 @@ void registerNameEndpoint()
    // store "fake" callback arg in storage and retrieve in callback
     storageStore(txHash, sizeof(HASH), nameHash, sizeof(HASH));
 
-    dataLen = _constructAsyncCallData(SET_USER_NAME_FUNCTION, SET_USER_NAME_LEN, 
-        (byte**)&name, &nameLen, 1, dataAsync);
+    dataLen = _constructAsyncCallData(SET_USER_NAME_FUNCTION, SET_USER_NAME_FUNCTION_LEN, 
+        (const byte**)&name, &nameLen, 1, dataAsync);
     asyncCall(callerAddress, ZERO_32_BYTE_ARRAY, dataAsync, dataLen);
 }
 
@@ -284,7 +282,7 @@ int _checkNameChar(byte ch)
     return (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'z');
 }
 
-byte* _validateName(byte *name, int len)
+byte* _validateName(const byte *name, int len)
 {
     int i;
 
@@ -304,7 +302,7 @@ byte* _validateName(byte *name, int len)
     return NULL;
 }
 
-void _hashName(byte *name, int nameLen, HASH result)
+void _hashName(const byte *name, int nameLen, HASH result)
 {
     keccak256(name, nameLen, result);
 }
@@ -317,7 +315,7 @@ int _getOwnShardId()
     return getShardOfAddress(scAddr);
 }
 
-void _copy(byte *dest, byte *src, int len)
+void _copy(byte *dest, const byte *src, int len)
 {
     int i;
     for (i = 0; i < len; i++)
@@ -326,7 +324,7 @@ void _copy(byte *dest, byte *src, int len)
     }
 }
 
-void _copyRange(byte *dest, byte *src, int destStart, int srcStart, int len)
+void _copyRange(byte *dest, const byte *src, int destStart, int srcStart, int len)
 {
     int i;
     for (int i = 0; i < len; i++)
@@ -335,7 +333,7 @@ void _copyRange(byte *dest, byte *src, int destStart, int srcStart, int len)
     }
 }
 
-bool _equal(byte *op1, byte *op2, int len)
+bool _equal(const byte *op1, const byte *op2, int len)
 {
     int i;
     for (i = 0; i < len; i++)
@@ -349,17 +347,17 @@ bool _equal(byte *op1, byte *op2, int len)
     return true;
 }
 
-void _loadValue(HASH key, Value *value)
+void _loadValue(const HASH key, Value *value)
 {
     storageLoad(key, sizeof(HASH), (byte*)value);
 }
 
-void _storeValue(HASH key, Value *value)
+void _storeValue(const HASH key, const Value *value)
 {
     storageStore(key, sizeof(HASH), (byte*)value, sizeof(Value));
 }
 
-void _resolveFromHash(HASH nameHash, ADDRESS result)
+void _resolveFromHash(const HASH nameHash, ADDRESS result)
 {
     Value value = {};
 
@@ -373,7 +371,8 @@ void _resolveFromHash(HASH nameHash, ADDRESS result)
     }
 }
 
-int _constructAsyncCallData(byte *funcName, int funcLen, byte **args, int *argsLen, int nrArgs, byte *data)
+int _constructAsyncCallData(const byte *funcName, int funcLen, const byte **args, 
+    const int *argsLen, int nrArgs, byte *data)
 {
     int i;
     int dataIndex = 0;
@@ -408,7 +407,7 @@ byte _halfByteToHexDigit(byte num)
 	}
 }
 
-void _hexEncode(byte *data, int dataLen, byte *result)
+void _hexEncode(const byte *data, int dataLen, byte *result)
 {
     int i;
     for (i = 0; i < dataLen; i++)
