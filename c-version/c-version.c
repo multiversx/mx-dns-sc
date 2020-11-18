@@ -23,9 +23,10 @@ typedef struct
     ADDRESS address;
 } Value;
 
-byte* _validateName(const byte *name, int len);
+void _validateName(const byte *name, int len);
 void _hashName(const byte *name, int nameLen, HASH result);
-int _getOwnShardId();
+byte _shardId(const ADDRESS address);
+byte _getOwnShardId();
 void _copy(byte *dest, const byte *source, int len);
 void _copyRange(byte *dest, const byte *src, int destStart, int srcStart, int len);
 bool _equal(const byte *op1, const byte *op2, int len);
@@ -82,7 +83,6 @@ void registerNameEndpoint()
     byte name[100] = {};
     int nameLen;
     HASH nameHash = {};
-    byte *errMsg;
 
     Value value = {};
     ADDRESS callerAddress = {};
@@ -103,14 +103,9 @@ void registerNameEndpoint()
     }
 
     nameLen = getArgument(0, name);
-    errMsg = _validateName(name, nameLen);
-    if (errMsg != NULL)
-    {
-        signalError(errMsg, sizeof(errMsg) - 1);
-    }
-
+    _validateName(name, nameLen);
     _hashName(name, nameLen, nameHash);
-    if (getShardOfAddress(nameHash) != _getOwnShardId())
+    if (_shardId(nameHash) != _getOwnShardId())
     {
         SIGNAL_ERROR(ERR_DIFFERENT_SHARD);
     }
@@ -177,9 +172,9 @@ void getOwnShardIdView()
     CHECK_NOT_PAYABLE();
     CHECK_NUM_ARGS(0);
 
-    int shardId = _getOwnShardId();
+    byte shardId = _getOwnShardId();
 
-    int64finish(shardId);
+    finish(&shardId, sizeof(byte));
 }
 
 // Args:
@@ -209,13 +204,13 @@ void nameShardView()
     int len;
     byte name[100] = {};
     HASH hash = {};
-    int shardId;
+    byte shardId;
 
     len = getArgument(0, name);
     _hashName(name, len, hash);
-    shardId = getShardOfAddress(hash);
+    shardId = _shardId(hash);
     
-    int64finish(shardId);
+    finish(&shardId, sizeof(byte));
 }
 
 // Args:
@@ -227,15 +222,9 @@ void validateNameView()
 
     int len;
     byte name[100] = {};
-    byte *errMsg; 
     
     len = getArgument(0, name);
-    errMsg = _validateName(name, len);
-
-    if (errMsg != NULL)
-    {
-        signalError(errMsg, sizeof(errMsg) - 1);
-    }
+    _validateName(name, len);
 
     finish(OK_RETURN_MSG, OK_RETURN_MSG_LEN);
 }
@@ -282,24 +271,22 @@ int _checkNameChar(byte ch)
     return (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'z');
 }
 
-byte* _validateName(const byte *name, int len)
+void _validateName(const byte *name, int len)
 {
     int i;
 
     if (len < MIN_NAME_LENGTH)
     {
-        return ERR_NAME_TOO_SHORT;
+        SIGNAL_ERROR(ERR_NAME_TOO_SHORT);
     }
 
     for (i = 0; i < len; i++)
     {
-        if (_checkNameChar(name[i]))
+        if (!_checkNameChar(name[i]))
         {
-            return ERR_CHARACTER_NOT_ALLOWED;
+            SIGNAL_ERROR(ERR_CHARACTER_NOT_ALLOWED);
         }
     }
-
-    return NULL;
 }
 
 void _hashName(const byte *name, int nameLen, HASH result)
@@ -307,12 +294,17 @@ void _hashName(const byte *name, int nameLen, HASH result)
     keccak256(name, nameLen, result);
 }
 
-int _getOwnShardId()
+byte _shardId(const ADDRESS address)
+{
+    return address[sizeof(ADDRESS) - 1];
+}
+
+byte _getOwnShardId()
 {
     ADDRESS scAddr = {};
     getSCAddress(scAddr);
 
-    return getShardOfAddress(scAddr);
+    return _shardId(scAddr);
 }
 
 void _copy(byte *dest, const byte *src, int len)
@@ -361,7 +353,7 @@ void _resolveFromHash(const HASH nameHash, ADDRESS result)
 {
     Value value = {};
 
-    if (getShardOfAddress(nameHash) == _getOwnShardId())
+    if (_shardId(nameHash) == _getOwnShardId())
     {
         _loadValue(nameHash, &value);
         if (value.state == Commited)
@@ -459,4 +451,32 @@ void callBack()
 
     // clear callback stored value
     storageStore(txHash, sizeof(HASH), NULL, 0);
+}
+
+// fake memcpy
+void *memcpy(void *dest, const void *src, unsigned long n);
+void *memcpy(void *dest, const void *src, unsigned long n)
+{
+    char *csrc = (char *)src;
+    char *cdest = (char *)dest;
+
+    for (int i = 0; i < n; i++)
+    {
+        cdest[i] = csrc[i];
+    }
+
+    return dest;
+}
+
+// fake memset
+void* memset(void *dest, int c, unsigned long n);
+void* memset(void *dest, int c, unsigned long n)
+{
+    int i;
+    char *cdest = (char *)dest;
+    for (i = 0; i < n; i++)
+    {
+        cdest[i] = c;
+    }
+    return dest;
 }
