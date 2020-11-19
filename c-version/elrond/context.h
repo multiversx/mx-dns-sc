@@ -55,4 +55,7 @@ int clearStorageLock(byte *key, int keyLen);
 int keccak256(const byte *key, int keyLength, byte *result);
 int sha256(const byte *key, int keyLength, byte *result);
 
+// Debugging
+void myDebug(const byte *data, int length);
+
 #endif

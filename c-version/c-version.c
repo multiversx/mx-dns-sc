@@ -31,11 +31,15 @@ byte _getOwnShardId();
 void _copy(byte *dest, const byte *source, int len);
 void _copyRange(byte *dest, const byte *src, int destStart, int srcStart, int len);
 bool _equal(const byte *op1, const byte *op2, int len);
-void _loadValue(const HASH key, Value *value);
-void _storeValue(const HASH key, const Value *value);
+void _loadValue(const HASH nameHash, Value *value);
+void _storeValue(const HASH nameHash, const Value *value);
+void _loadCallbackArg(HASH nameHash);
+void _storeCallbackArg(const HASH nameHash);
+void _clearCallbackArg();
 void _resolveFromHash(const HASH nameHash, ADDRESS result);
+void _constructKey(const byte *prefix, int prefixLen,  const byte *arg, int argLen, byte *key);
 int _constructAsyncCallData(const byte *funcName, int funcLen, 
-    const byte **args, const int *argsLen, int nrArgs, byte *data);
+    const byte *arg, int argLen, byte *data);
 byte _halfByteToHexDigit(byte num);
 void _hexEncode(const byte *data, int dataLen, byte *result);
 
@@ -52,7 +56,12 @@ ERROR_MSG(ERR_DIFFERENT_SHARD, "name belongs to another shard");
 ERROR_MSG(ERR_NAME_ALREADY_TAKEN, "name already taken");
 ERROR_MSG(ERR_CLAIM, "only owner can claim");
 
+// full keys
 STORAGE_KEY(REGISTRATION_COST);
+
+//partial keys
+STORAGE_KEY(VALUE_STATE); // + HASH nameHash -> ValueState
+STORAGE_KEY(CALLBACK); // + HASH originalTxHash -> HASH nameHash
 
 // endpoints
 
@@ -87,7 +96,6 @@ void registerNameEndpoint()
     Value value = {};
     ADDRESS callerAddress = {};
 
-    HASH txHash = { };
     byte dataAsync[200] = { };
     int dataLen;
     
@@ -120,19 +128,12 @@ void registerNameEndpoint()
     _copy(value.address, callerAddress, sizeof(ADDRESS));
     _storeValue(nameHash, &value);
 
-    getOriginalTxHash(txHash);
-   // store "fake" callback arg in storage and retrieve in callback
-    storageStore(txHash, sizeof(HASH), nameHash, sizeof(HASH));
-
-
+    _storeCallbackArg(nameHash);
 
     dataLen = _constructAsyncCallData(SET_USER_NAME_FUNCTION, SET_USER_NAME_FUNCTION_LEN, 
-        (const byte**)&name, &nameLen, 1, dataAsync);
+        name, nameLen, dataAsync);
 
-    storageStore("FAKE KEY", 8, NULL, 0);
-    finish(dataAsync, dataLen);
-
-    //asyncCall(callerAddress, ZERO_32_BYTE_ARRAY, dataAsync, dataLen);
+    asyncCall(callerAddress, ZERO_32_BYTE_ARRAY, dataAsync, dataLen);
 }
 
 void claim()
@@ -340,14 +341,55 @@ bool _equal(const byte *op1, const byte *op2, int len)
     return true;
 }
 
-void _loadValue(const HASH key, Value *value)
+void _loadValue(const HASH nameHash, Value *value)
 {
-    storageLoad(key, sizeof(HASH), (byte*)value);
+    const int keyLen = VALUE_STATE_KEY_LEN + sizeof(HASH);
+    byte key[keyLen] = {};
+
+    _constructKey(VALUE_STATE_KEY, VALUE_STATE_KEY_LEN, nameHash, sizeof(HASH), key);
+    storageLoad(key, keyLen, (byte*)value);
 }
 
-void _storeValue(const HASH key, const Value *value)
+void _storeValue(const HASH nameHash, const Value *value)
 {
-    storageStore(key, sizeof(HASH), (byte*)value, sizeof(Value));
+    const int keyLen = VALUE_STATE_KEY_LEN + sizeof(HASH);
+    byte key[keyLen] = {};
+
+    _constructKey(VALUE_STATE_KEY, VALUE_STATE_KEY_LEN, nameHash, sizeof(HASH), key);
+    storageStore(key, keyLen, (byte*)value, sizeof(Value));
+}
+
+void _loadCallbackArg(HASH arg)
+{
+    const int keyLen = CALLBACK_KEY_LEN + sizeof(HASH);
+    byte key[keyLen] = {};
+    HASH txHash = {};
+
+    getOriginalTxHash(txHash);
+    _constructKey(CALLBACK_KEY, CALLBACK_KEY_LEN, txHash, sizeof(HASH), key);
+    storageLoad(key, keyLen, arg);
+}
+
+void _storeCallbackArg(const HASH nameHash)
+{
+    const int keyLen = CALLBACK_KEY_LEN + sizeof(HASH);
+    byte key[keyLen] = {};
+    HASH txHash = {};
+
+    getOriginalTxHash(txHash);
+    _constructKey(CALLBACK_KEY, CALLBACK_KEY_LEN, txHash, sizeof(HASH), key);
+    storageStore(key, keyLen, nameHash, sizeof(HASH));
+}
+
+void _clearCallbackArg()
+{
+    const int keyLen = CALLBACK_KEY_LEN + sizeof(HASH);
+    byte key[keyLen] = {};
+    HASH txHash = {};
+
+    getOriginalTxHash(txHash);
+    _constructKey(CALLBACK_KEY, CALLBACK_KEY_LEN, txHash, sizeof(HASH), key);
+    storageStore(key, keyLen, NULL, 0);
 }
 
 void _resolveFromHash(const HASH nameHash, ADDRESS result)
@@ -364,26 +406,29 @@ void _resolveFromHash(const HASH nameHash, ADDRESS result)
     }
 }
 
-int _constructAsyncCallData(const byte *funcName, int funcLen, const byte **args, 
-    const int *argsLen, int nrArgs, byte *data)
+void _constructKey(const byte *prefix, int prefixLen,  const byte *arg, int argLen, byte *key)
+{
+    _copy(key, prefix, prefixLen);
+    _copyRange(key, arg, prefixLen, 0, argLen);
+}
+
+int _constructAsyncCallData(const byte *funcName, int funcLen, 
+    const byte *arg, int argLen, byte *data)
 {
     int i;
     int dataIndex = 0;
     byte hexEncodedData[1000] = { };
-    byte argDelimiter[1] = "@";
+    const byte argDelimiter = '@';
 
-    //_copy(data, funcName, funcLen);
-    //dataIndex += funcLen;
+    _copy(data, funcName, funcLen);
+    dataIndex += funcLen;
 
-    for (i = 0; i < nrArgs; i++)
-    {
-        //_copyRange(data, argDelimiter, dataIndex, 0, 1);
-        //dataIndex++;
+    _copyRange(data, &argDelimiter, dataIndex, 0, 1);
+    dataIndex++;
 
-        _hexEncode(args[i], argsLen[i], hexEncodedData);
-        _copyRange(data, hexEncodedData, dataIndex, 0, 2 * argsLen[i]);
-        dataIndex += 2 * argsLen[i];
-    }
+    _hexEncode(arg, argLen, hexEncodedData);
+    _copyRange(data, hexEncodedData, dataIndex, 0, 2 * argLen);
+    dataIndex += 2 * argLen;
 
     return dataIndex;
 }
@@ -415,43 +460,27 @@ void _hexEncode(const byte *data, int dataLen, byte *result)
 // second arg: data passed by finish() in other contract OR error message
 void callBack()
 {
-    // return code is i32
-    byte resultAsBytes[4] = {};
-    int result;
-    HASH txHash = {};
     HASH nameHash = {};
     Value value = {};
+    int numArgs = getNumArguments();
+    int result = numArgs ? int64getArgument(0) : 0;
 
-    getArgument(0, resultAsBytes);
-    getOriginalTxHash(txHash);
-    storageLoad(txHash, sizeof(HASH), nameHash);
+    _loadCallbackArg(nameHash);
     _loadValue(nameHash, &value);
 
-    // return code fits in one byte, others will be 0
-    result = (int)resultAsBytes[3];
-
-    if (result == 0)
+    if (result == 0 && value.state == Pending)
     {
-        if (value.state == Pending)
-        {
-            value.state = Commited;
-        }
-        else
-        {
-            value.state = None;
-            _copy(value.address, ZERO_32_BYTE_ARRAY, sizeof(ADDRESS));
-        }
+        value.state = Commited;
     }
     else
     {
         value.state = None;
-            _copy(value.address, ZERO_32_BYTE_ARRAY, sizeof(ADDRESS));
+        _copy(value.address, ZERO_32_BYTE_ARRAY, sizeof(ADDRESS));
     }
     
     _storeValue(nameHash, &value);
 
-    // clear callback stored value
-    storageStore(txHash, sizeof(HASH), NULL, 0);
+    _clearCallbackArg();
 }
 
 // fake memcpy
