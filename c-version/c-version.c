@@ -9,6 +9,7 @@
 typedef int bool;
 typedef byte ADDRESS[32];
 typedef byte HASH[32];
+typedef byte PAYMENT[32];
 
 typedef enum
 {
@@ -75,8 +76,7 @@ void registerNameEndpoint()
 {
     CHECK_NUM_ARGS(1);
 
-    byte paymentAsBytes[100] = {};
-    int payLen;
+    PAYMENT paymentAsBytes = {};
     bigInt payment = bigIntNew(0);
     bigInt registrationCost = bigIntNew(0);
 
@@ -88,12 +88,11 @@ void registerNameEndpoint()
     ADDRESS callerAddress = {};
 
     HASH txHash = { };
-    byte callValueAsync[32] = { 0 };
     byte dataAsync[200] = { };
     int dataLen;
     
-    payLen = getCallValue(paymentAsBytes);
-    bigIntSetUnsignedBytes(payment, paymentAsBytes, payLen);
+    getCallValue(paymentAsBytes);
+    bigIntSetUnsignedBytes(payment, paymentAsBytes, sizeof(PAYMENT));
     bigIntStorageLoadUnsigned(REGISTRATION_COST_KEY, REGISTRATION_COST_KEY_LEN, 
         registrationCost);
 
@@ -125,9 +124,15 @@ void registerNameEndpoint()
    // store "fake" callback arg in storage and retrieve in callback
     storageStore(txHash, sizeof(HASH), nameHash, sizeof(HASH));
 
+
+
     dataLen = _constructAsyncCallData(SET_USER_NAME_FUNCTION, SET_USER_NAME_FUNCTION_LEN, 
         (const byte**)&name, &nameLen, 1, dataAsync);
-    asyncCall(callerAddress, ZERO_32_BYTE_ARRAY, dataAsync, dataLen);
+
+    storageStore("FAKE KEY", 8, NULL, 0);
+    finish(dataAsync, dataLen);
+
+    //asyncCall(callerAddress, ZERO_32_BYTE_ARRAY, dataAsync, dataLen);
 }
 
 void claim()
@@ -318,11 +323,7 @@ void _copy(byte *dest, const byte *src, int len)
 
 void _copyRange(byte *dest, const byte *src, int destStart, int srcStart, int len)
 {
-    int i;
-    for (int i = 0; i < len; i++)
-    {
-        dest[destStart + i] = src[srcStart + i];
-    }
+    _copy(dest + destStart, src + srcStart, len);
 }
 
 bool _equal(const byte *op1, const byte *op2, int len)
@@ -371,16 +372,16 @@ int _constructAsyncCallData(const byte *funcName, int funcLen, const byte **args
     byte hexEncodedData[1000] = { };
     byte argDelimiter[1] = "@";
 
-    _copy(data, funcName, funcLen);
-    dataIndex += funcLen;
+    //_copy(data, funcName, funcLen);
+    //dataIndex += funcLen;
 
     for (i = 0; i < nrArgs; i++)
     {
-        _copyRange(data, argDelimiter, dataIndex, 0, 1);
-        dataIndex++;
+        //_copyRange(data, argDelimiter, dataIndex, 0, 1);
+        //dataIndex++;
 
         _hexEncode(args[i], argsLen[i], hexEncodedData);
-        _copyRange(data, hexEncodedData, dataIndex, 0, argsLen[i]);
+        _copyRange(data, hexEncodedData, dataIndex, 0, 2 * argsLen[i]);
         dataIndex += 2 * argsLen[i];
     }
 
