@@ -47,7 +47,6 @@ const ADDRESS ZERO_32_BYTE_ARRAY = { 0 };
 
 GENERAL_MSG(SET_USER_NAME_FUNCTION, "SetUserName");
 GENERAL_MSG(CLAIM_MSG, "dns claim");
-GENERAL_MSG(OK_RETURN_MSG, "ok");
 
 ERROR_MSG(ERR_NAME_TOO_SHORT, "name is too short");
 ERROR_MSG(ERR_CHARACTER_NOT_ALLOWED, "character not allowed");
@@ -156,8 +155,6 @@ void claim()
     getSCAddress(scAddress);
     getExternalBalance(scAddress, balance);
     transferValue(contractOwner, balance, CLAIM_MSG, CLAIM_MSG_LEN);
-
-    finish(OK_RETURN_MSG, OK_RETURN_MSG_LEN);
 }
 
 // view functions
@@ -231,8 +228,6 @@ void validateNameView()
     
     len = getArgument(0, name);
     _validateName(name, len);
-
-    finish(OK_RETURN_MSG, OK_RETURN_MSG_LEN);
 }
 
 // Args:
@@ -467,7 +462,6 @@ void callBack()
 
     _loadCallbackArg(nameHash);
     _loadValue(nameHash, &value);
-
     if (result == 0 && value.state == Pending)
     {
         value.state = Commited;
