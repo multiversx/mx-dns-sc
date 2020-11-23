@@ -15,5 +15,17 @@
     },
     "terminal.integrated.environmentChangesIndicator": "on",
     "terminal.integrated.inheritEnv": true,
-    "workbench.dialogs.customEnabled": true
+    "workbench.dialogs.customEnabled": true,
+    "files.associations": {
+        "climits": "c",
+        "cmath": "c",
+        "cstdarg": "c",
+        "cstdio": "c",
+        "cstdlib": "c",
+        "type_traits": "c",
+        "limits": "c",
+        "*.tcc": "c",
+        "cstdint": "c",
+        "typeinfo": "c"
+    }
 }
