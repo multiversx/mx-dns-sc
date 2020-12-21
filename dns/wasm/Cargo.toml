@@ -20,8 +20,8 @@ features=["wasm-output-mode"]
 default-features = false
 
 [dependencies.elrond-wasm-output]
-version="0.9.6"
-features=["wasm-output-mode"]
+version = "0.10.0"
+features = ["wasm-output-mode"]
 
 # Prevent this from interfering with workspaces
 [workspace]
