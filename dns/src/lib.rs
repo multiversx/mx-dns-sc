@@ -17,7 +17,7 @@ use value_state::*;
 imports!();
 
 #[inline]
-fn shard_id(addr: &Address) -> u8 {
+fn shard_id(addr: &H256) -> u8 {
     addr.as_bytes()[31]
 }
 
@@ -116,7 +116,7 @@ pub trait Dns {
             return sc_error!("only owner can claim");
         }
 
-        self.send_tx(&contract_owner, &self.get_sc_balance(), "dns claim");
+        self.send_tx(&contract_owner, &self.get_sc_balance(), b"dns claim");
 
         Ok(())
     }
@@ -145,7 +145,7 @@ pub trait Dns {
 
     #[view(getOwnShardId)]
     fn get_own_shard_id(&self) -> u8 {
-        shard_id(&self.get_sc_address())
+        shard_id(&self.get_sc_address().into())
     }
 
     #[view(nameHash)]
@@ -166,7 +166,7 @@ pub trait Dns {
     // METADATA
 
     #[view]
-    fn version(&self) -> &'static str {
-        env!("CARGO_PKG_VERSION")
+    fn version(&self) -> &'static [u8] {
+        env!("CARGO_PKG_VERSION").as_bytes()
     }
 }
