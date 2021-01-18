@@ -1,6 +1,7 @@
 imports!();
 
-const MIN_LENGTH: usize = 10;
+const MIN_LENGTH: usize = 3;
+const MAX_LENGTH: usize = 32;
 const NAME_SUFFIX: &[u8] = b".elrond";
 
 fn check_name_char(ch: u8) -> bool {
@@ -18,6 +19,10 @@ fn check_name_char(ch: u8) -> bool {
 pub fn validate_name(name: &[u8]) -> SCResult<()> {
     if name.len() <= NAME_SUFFIX.len() {
         return sc_error!("name does not contain suffix");
+    }
+
+    if name.len() > MAX_LENGTH {
+        return sc_error!("name too long");
     }
 
     let (name_without_suffix, suffix) = name.split_at(name.len() - NAME_SUFFIX.len());
@@ -54,7 +59,7 @@ mod tests {
 
         // too short
         assert!(!validate_name(&*b".elrond").is_ok());
-        assert!(!validate_name(&*b"aaaaaaaaa.elrond").is_ok());
+        assert!(!validate_name(&*b"aa.elrond").is_ok());
 
         // lowercase only
         assert!(!validate_name(&*b"Aaaaaaaaaa.elrond").is_ok());
@@ -72,5 +77,8 @@ mod tests {
         assert!(!validate_name(&*b"0000000000").is_ok());
         assert!(!validate_name(&*b"9999999999").is_ok());
         assert!(!validate_name(&*b"coolname0001").is_ok());
+
+        // name too long
+        assert!(!validate_name(&*b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.elrond").is_ok());
     }
 }
