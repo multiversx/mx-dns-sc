@@ -4,6 +4,7 @@ const MIN_LENGTH: usize = 3;
 const MAX_LENGTH: usize = 32;
 const NAME_SUFFIX: &[u8] = b".elrond";
 
+#[allow(clippy::manual_range_contains)]
 fn check_name_char(ch: u8) -> bool {
     if ch >= b'a' && ch <= b'z' {
         return true;
