@@ -37,26 +37,44 @@ pub trait Dns {
         self.set_registration_cost(registration_cost);
     }
 
-    #[payable]
-    #[endpoint]
-    fn register(&self, name: BoxedBytes, #[payment] payment: BigUint) -> SCResult<()> {
+    fn validate_name_shard(&self, name_hash: &H256) -> SCResult<()> {
+        require!(
+            shard_id(&name_hash) == self.get_own_shard_id(),
+            "name belongs to another shard"
+        );
+        Ok(())
+    }
+
+    /// `name_hash` is redundant, but passed to the method so we don't compute it twice.
+    fn validate_register_input(&self, name: &BoxedBytes, name_hash: &H256) -> SCResult<()> {
         feature_guard!(self.features_module(), b"register", true);
 
         sc_try!(name_validation::validate_name(name.as_slice()));
 
-        if payment != self.get_registration_cost() {
-            return sc_error!("should pay exactly the registration cost");
-        }
-
-        let name_hash = self.name_hash(name.as_slice());
-        if shard_id(&name_hash) != self.get_own_shard_id() {
-            return sc_error!("name belongs to another shard");
-        }
+        sc_try!(self.validate_name_shard(name_hash));
 
         let vs = self.get_value_state(&name_hash);
-        if !vs.is_available() {
-            return sc_error!("name already taken");
-        }
+        require!(vs.is_available(), "name already taken");
+
+        Ok(())
+    }
+
+    #[view(canRegister)]
+    fn can_register(&self, name: BoxedBytes) -> SCResult<()> {
+        let name_hash = self.name_hash(name.as_slice());
+        self.validate_register_input(&name, &name_hash)
+    }
+
+    #[payable]
+    #[endpoint]
+    fn register(&self, name: BoxedBytes, #[payment] payment: BigUint) -> SCResult<()> {
+        let name_hash = self.name_hash(name.as_slice());
+        sc_try!(self.validate_register_input(&name, &name_hash));
+
+        require!(
+            payment == self.get_registration_cost(),
+            "should pay exactly the registration cost"
+        );
 
         let address = self.get_caller();
         self.set_value_state(&name_hash, &ValueState::Pending(address.clone()));
@@ -103,10 +121,41 @@ pub trait Dns {
         }
 
         let vs = self.get_value_state(&name_hash);
-        match vs {
-            ValueState::Committed(address) => OptionalResult::Some(address),
-            _ => OptionalResult::None,
+        if let ValueState::Committed(address) = vs {
+            OptionalResult::Some(address)
+        } else {
+            OptionalResult::None
         }
+    }
+
+    #[view(checkPending)]
+    fn check_pending(&self, name: &[u8]) -> OptionalResult<Address> {
+        let name_hash = self.name_hash(name);
+        if shard_id(&name_hash) != self.get_own_shard_id() {
+            return OptionalResult::None;
+        }
+
+        let vs = self.get_value_state(&name_hash);
+        if let ValueState::Pending(address) = vs {
+            OptionalResult::Some(address)
+        } else {
+            OptionalResult::None
+        }
+    }
+
+    #[view(resetPending)]
+    fn reset_pending(&self, name: &[u8]) -> SCResult<()> {
+        only_owner!(self, "only owner can resetPending");
+
+        let name_hash = self.name_hash(name);
+        sc_try!(self.validate_name_shard(&name_hash));
+
+        let vs = self.get_value_state(&name_hash);
+        if let ValueState::Pending(_) = vs {
+            self.set_value_state(&name_hash, &ValueState::None);
+        }
+
+        Ok(())
     }
 
     #[endpoint]
@@ -150,7 +199,7 @@ pub trait Dns {
 
     #[view(nameHash)]
     fn name_hash(&self, name: &[u8]) -> H256 {
-        self.keccak256(name).into()
+        self.keccak256(name)
     }
 
     #[view(nameShard)]
