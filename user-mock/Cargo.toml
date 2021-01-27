@@ -1,6 +1,6 @@
 [package]
 name = "user-mock"
-version = "0.3.0"
+version = "0.0.0"
 authors = ["andrei-marinica <andrei.marinica@elrond.com>"]
 edition = "2018"
 
@@ -12,14 +12,14 @@ wasm-output-mode = [
 default = []
 
 [dependencies.elrond-wasm]
-version = "0.10.0"
+version = "0.10.5"
 
 [dependencies.elrond-wasm-derive]
-version = "0.10.0"
+version = "0.10.5"
 
 [dependencies.elrond-wasm-node]
-version = "0.10.0"
+version = "0.10.5"
 optional = true
 
 [dev-dependencies]
-elrond-wasm-debug = "0.10.0"
+elrond-wasm-debug = "0.10.5"
