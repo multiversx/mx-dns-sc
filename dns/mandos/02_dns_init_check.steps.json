@@ -45,7 +45,7 @@
                 "gasPrice": "0"
             },
             "expect": {
-                "out": [ "''dns_owner_______________________" ],
+                "out": [ "address:dns_owner" ],
                 "status": "",
                 "logs": [],
                 "gas": "*",

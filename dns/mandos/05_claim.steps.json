@@ -5,7 +5,7 @@
             "step": "scCall",
             "txId": "claim",
             "tx": {
-                "from": "''dns_owner_______________________",
+                "from": "address:dns_owner",
                 "to": "''dns____________________________|0x87",
                 "value": "0",
                 "function": "claim",
@@ -24,7 +24,7 @@
         {
             "step": "checkState",
             "accounts": {
-                "''dns_owner_______________________": {
+                "address:dns_owner": {
                     "nonce": "*",
                     "balance": "123,000",
                     "storage": {},
