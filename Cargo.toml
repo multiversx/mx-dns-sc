@@ -2,4 +2,5 @@
 members = [
   "dns",
   "dns/abi",
+  "tools/name-miner",
 ]
