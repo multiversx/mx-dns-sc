@@ -38,7 +38,3 @@ optional = true
 
 [dev-dependencies.elrond-wasm-debug]
 version = "0.10.5"
-
-[dev-dependencies.user-mock]
-path = "../user-mock"
-

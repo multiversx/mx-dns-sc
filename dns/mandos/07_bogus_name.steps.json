@@ -10,7 +10,7 @@
                 "value": "0",
                 "function": "resolve",
                 "arguments": [
-                    "str:bogusname000"
+                    "str:bogusname000.elrond"
                 ],
                 "gasLimit": "100,000",
                 "gasPrice": "0"

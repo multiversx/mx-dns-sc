@@ -2,5 +2,4 @@
 members = [
   "dns",
   "dns/abi",
-  "user-mock",
 ]
