@@ -5,12 +5,12 @@
             "step": "scCall",
             "txId": "claim",
             "tx": {
-                "from": "''dns_owner_______________________",
-                "to": "''dns____________________________|0x87",
+                "from": "address:dns_owner",
+                "to": "sc:dns#87",
                 "value": "0",
                 "function": "claim",
                 "arguments": [],
-                "gasLimit": "100,000",
+                "gasLimit": "50,000,000",
                 "gasPrice": "0"
             },
             "expect": {
@@ -24,14 +24,14 @@
         {
             "step": "checkState",
             "accounts": {
-                "''dns_owner_______________________": {
+                "address:dns_owner": {
                     "nonce": "*",
                     "balance": "123,000",
                     "storage": {},
                     "code": "",
                     "asyncCallData": "str:dns claim"
                 },
-                "''dns____________________________|0x87": {
+                "sc:dns#87": {
                     "nonce": "*",
                     "balance": "0",
                     "storage": "*",

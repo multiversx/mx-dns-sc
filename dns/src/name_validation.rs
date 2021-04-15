@@ -1,4 +1,4 @@
-imports!();
+elrond_wasm::imports!();
 
 const MIN_LENGTH: usize = 3;
 const MAX_LENGTH: usize = 32;

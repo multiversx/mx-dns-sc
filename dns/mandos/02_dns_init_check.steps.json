@@ -17,11 +17,11 @@
             "txId": "check-version",
             "tx": {
                 "from": "address:viewer",
-                "to": "''dns____________________________|0x00",
+                "to": "sc:dns#00",
                 "value": "0",
                 "function": "version",
                 "arguments": [],
-                "gasLimit": "100,000",
+                "gasLimit": "50,000,000",
                 "gasPrice": "0"
             },
             "expect": {
@@ -37,15 +37,15 @@
             "txId": "check-owner",
             "tx": {
                 "from": "address:viewer",
-                "to": "''dns____________________________|0x00",
+                "to": "sc:dns#00",
                 "value": "0",
                 "function": "getContractOwner",
                 "arguments": [],
-                "gasLimit": "100,000",
+                "gasLimit": "50,000,000",
                 "gasPrice": "0"
             },
             "expect": {
-                "out": [ "''dns_owner_______________________" ],
+                "out": [ "address:dns_owner" ],
                 "status": "",
                 "logs": [],
                 "gas": "*",

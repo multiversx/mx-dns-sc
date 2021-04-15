@@ -2,5 +2,5 @@
 members = [
   "dns",
   "dns/abi",
-  "user-mock",
+  "tools/name-miner",
 ]

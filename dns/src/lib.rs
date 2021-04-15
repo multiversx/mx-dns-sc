@@ -1,5 +1,6 @@
 #![no_std]
 #![allow(unused_attributes)]
+#![allow(non_snake_case)]
 #![allow(clippy::string_lit_as_bytes)]
 #![allow(clippy::ptr_arg)]
 
@@ -14,7 +15,7 @@ pub mod value_state;
 use elrond_wasm_module_features::*;
 use value_state::*;
 
-imports!();
+elrond_wasm::imports!();
 
 #[inline]
 fn shard_id(addr: &H256) -> u8 {
@@ -23,8 +24,7 @@ fn shard_id(addr: &H256) -> u8 {
 
 #[elrond_wasm_derive::callable(UserProxy)]
 pub trait User {
-    #[callback(set_user_name_callback)]
-    fn SetUserName(&self, #[callback_arg] cb_name_hash: &H256, name: &BoxedBytes);
+    fn SetUserName(&self, name: &BoxedBytes) -> ContractCall<BigUint, ()>;
 }
 
 #[elrond_wasm_derive::contract(DnsImpl)]
@@ -67,7 +67,11 @@ pub trait Dns {
 
     #[payable]
     #[endpoint]
-    fn register(&self, name: BoxedBytes, #[payment] payment: BigUint) -> SCResult<()> {
+    fn register(
+        &self,
+        name: BoxedBytes,
+        #[payment] payment: BigUint,
+    ) -> SCResult<AsyncCall<BigUint>> {
         let name_hash = self.name_hash(name.as_slice());
         sc_try!(self.validate_register_input(&name, &name_hash));
 
@@ -79,31 +83,31 @@ pub trait Dns {
         let address = self.get_caller();
         self.set_value_state(&name_hash, &ValueState::Pending(address.clone()));
 
-        let user_proxy = contract_proxy!(self, &address, User);
-        user_proxy.SetUserName(&name_hash, &name);
-
-        Ok(())
+        Ok(contract_call!(self, address, UserProxy)
+            .SetUserName(&name)
+            .async_call()
+            .with_callback(self.callbacks().set_user_name_callback(&name_hash)))
     }
 
     #[callback]
     fn set_user_name_callback(
         &self,
-        result: AsyncCallResult<()>,
-        #[callback_arg] cb_name_hash: H256,
+        cb_name_hash: &H256,
+        #[call_result] result: AsyncCallResult<()>,
     ) {
         match result {
             AsyncCallResult::Ok(()) => {
                 // commit
                 let vm = self.get_value_state(&cb_name_hash);
                 if let ValueState::Pending(addr) = vm {
-                    self.set_value_state(&cb_name_hash, &ValueState::Committed(addr));
+                    self.set_value_state(cb_name_hash, &ValueState::Committed(addr));
                 } else {
-                    self.set_value_state(&cb_name_hash, &ValueState::None);
+                    self.set_value_state(cb_name_hash, &ValueState::None);
                 }
             }
             AsyncCallResult::Err(_) => {
                 // revert
-                self.set_value_state(&cb_name_hash, &ValueState::None);
+                self.set_value_state(cb_name_hash, &ValueState::None);
             }
         }
     }
@@ -165,7 +169,8 @@ pub trait Dns {
             return sc_error!("only owner can claim");
         }
 
-        self.send_tx(&contract_owner, &self.get_sc_balance(), b"dns claim");
+        self.send()
+            .direct_egld(&contract_owner, &self.get_sc_balance(), b"dns claim");
 
         Ok(())
     }
