@@ -5,14 +5,15 @@
 #![allow(clippy::ptr_arg)]
 
 #[cfg(feature = "elrond-wasm-module-features-default")]
-pub use elrond_wasm_module_features_default as elrond_wasm_module_features;
+pub use elrond_wasm_module_features_default as features;
 #[cfg(feature = "elrond-wasm-module-features-wasm")]
-pub use elrond_wasm_module_features_wasm as elrond_wasm_module_features;
+pub use elrond_wasm_module_features_wasm as features;
 
 pub mod name_validation;
+pub mod user_builtin;
 pub mod value_state;
 
-use elrond_wasm_module_features::*;
+use features::feature_guard;
 use value_state::*;
 
 elrond_wasm::imports!();
@@ -22,18 +23,13 @@ fn shard_id(addr: &H256) -> u8 {
     addr.as_bytes()[31]
 }
 
-#[elrond_wasm_derive::callable(UserProxy)]
-pub trait User {
-    fn SetUserName(&self, name: &BoxedBytes) -> ContractCall<BigUint, ()>;
-}
-
-#[elrond_wasm_derive::contract(DnsImpl)]
-pub trait Dns {
-    #[module(FeaturesModuleImpl)]
-    fn features_module(&self) -> FeaturesModuleImpl<T, BigInt, BigUint>;
+#[elrond_wasm_derive::contract]
+pub trait Dns: features::FeaturesModule {
+    #[proxy]
+    fn user_builtin_proxy(&self, to: Address) -> user_builtin::Proxy<Self::SendApi>;
 
     #[init]
-    fn init(&self, registration_cost: &BigUint) {
+    fn init(&self, registration_cost: &Self::BigUint) {
         self.set_registration_cost(registration_cost);
     }
 
@@ -47,11 +43,11 @@ pub trait Dns {
 
     /// `name_hash` is redundant, but passed to the method so we don't compute it twice.
     fn validate_register_input(&self, name: &BoxedBytes, name_hash: &H256) -> SCResult<()> {
-        feature_guard!(self.features_module(), b"register", true);
+        feature_guard!(self, b"register", true);
 
-        sc_try!(name_validation::validate_name(name.as_slice()));
+        name_validation::validate_name(name.as_slice())?;
 
-        sc_try!(self.validate_name_shard(name_hash));
+        self.validate_name_shard(name_hash)?;
 
         let vs = self.get_value_state(&name_hash);
         require!(vs.is_available(), "name already taken");
@@ -70,21 +66,22 @@ pub trait Dns {
     fn register(
         &self,
         name: BoxedBytes,
-        #[payment] payment: BigUint,
-    ) -> SCResult<AsyncCall<BigUint>> {
+        #[payment] payment: Self::BigUint,
+    ) -> SCResult<AsyncCall<Self::SendApi>> {
         let name_hash = self.name_hash(name.as_slice());
-        sc_try!(self.validate_register_input(&name, &name_hash));
+        self.validate_register_input(&name, &name_hash)?;
 
         require!(
             payment == self.get_registration_cost(),
             "should pay exactly the registration cost"
         );
 
-        let address = self.get_caller();
+        let address = self.blockchain().get_caller();
         self.set_value_state(&name_hash, &ValueState::Pending(address.clone()));
 
-        Ok(contract_call!(self, address, UserProxy)
-            .SetUserName(&name)
+        Ok(self
+            .user_builtin_proxy(address)
+            .set_user_name(&name)
             .async_call()
             .with_callback(self.callbacks().set_user_name_callback(&name_hash)))
     }
@@ -152,7 +149,7 @@ pub trait Dns {
         only_owner!(self, "only owner can resetPending");
 
         let name_hash = self.name_hash(name);
-        sc_try!(self.validate_name_shard(&name_hash));
+        self.validate_name_shard(&name_hash)?;
 
         let vs = self.get_value_state(&name_hash);
         if let ValueState::Pending(_) = vs {
@@ -164,13 +161,13 @@ pub trait Dns {
 
     #[endpoint]
     fn claim(&self) -> SCResult<()> {
-        let contract_owner = self.get_owner_address();
-        if self.get_caller() != contract_owner {
-            return sc_error!("only owner can claim");
-        }
+        only_owner!(self, "only owner can claim");
 
-        self.send()
-            .direct_egld(&contract_owner, &self.get_sc_balance(), b"dns claim");
+        self.send().direct_egld(
+            &self.blockchain().get_caller(),
+            &self.blockchain().get_sc_balance(),
+            b"dns claim",
+        );
 
         Ok(())
     }
@@ -179,10 +176,10 @@ pub trait Dns {
 
     #[view(getRegistrationCost)]
     #[storage_get("registration_cost")]
-    fn get_registration_cost(&self) -> BigUint;
+    fn get_registration_cost(&self) -> Self::BigUint;
 
     #[storage_set("registration_cost")]
-    fn set_registration_cost(&self, registration_cost: &BigUint);
+    fn set_registration_cost(&self, registration_cost: &Self::BigUint);
 
     #[storage_get("value_state")]
     fn get_value_state(&self, name_hash: &H256) -> ValueState;
@@ -194,17 +191,17 @@ pub trait Dns {
 
     #[view(getContractOwner)]
     fn get_owner_address_endpoint(&self) -> Address {
-        self.get_owner_address()
+        self.blockchain().get_owner_address()
     }
 
     #[view(getOwnShardId)]
     fn get_own_shard_id(&self) -> u8 {
-        shard_id(&self.get_sc_address().into())
+        shard_id(&self.blockchain().get_sc_address().into())
     }
 
     #[view(nameHash)]
     fn name_hash(&self, name: &[u8]) -> H256 {
-        self.keccak256(name)
+        self.crypto().keccak256(name)
     }
 
     #[view(nameShard)]

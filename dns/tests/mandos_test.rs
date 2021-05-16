@@ -1,5 +1,3 @@
-extern crate dns;
-use dns::*;
 use elrond_wasm::*;
 use elrond_wasm_debug::*;
 
@@ -8,7 +6,7 @@ fn contract_map() -> ContractMap<TxContext> {
     let mut contract_map = ContractMap::new();
     contract_map.register_contract(
         "file:../output/dns.wasm",
-        Box::new(|context| Box::new(DnsImpl::new(context))),
+        Box::new(|context| Box::new(dns::contract_obj(context))),
     );
     contract_map
 }
