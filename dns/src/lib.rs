@@ -61,7 +61,7 @@ pub trait Dns: features::FeaturesModule {
         self.validate_register_input(&name, &name_hash)
     }
 
-    #[payable]
+    #[payable("EGLD")]
     #[endpoint]
     fn register(
         &self,
