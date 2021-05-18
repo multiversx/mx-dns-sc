@@ -14,7 +14,7 @@ lto = true
 debug = false
 panic = "abort"
 
-[dependencies.dns]
+[dependencies.elrond-wasm-sc-dns]
 path = ".."
 features=["wasm-output-mode"]
 default-features = false
