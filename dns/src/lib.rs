@@ -1,6 +1,4 @@
 #![no_std]
-#![allow(unused_attributes)]
-#![allow(non_snake_case)]
 #![allow(clippy::string_lit_as_bytes)]
 #![allow(clippy::ptr_arg)]
 
