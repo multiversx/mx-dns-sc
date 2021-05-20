@@ -1,7 +1,3 @@
-use dns::*;
-use elrond_wasm_debug::*;
-
 fn main() {
-    let contract = DnsImpl::new(TxContext::dummy());
-    print!("{}", abi_json::contract_abi(&contract));
+    elrond_wasm_debug::abi_json::print_abi::<elrond_wasm_sc_dns::AbiProvider>();
 }

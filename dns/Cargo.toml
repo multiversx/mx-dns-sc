@@ -1,8 +1,17 @@
 [package]
-name = "dns"
-version = "0.3.1"
-authors = ["andrei-marinica <andrei.marinica@elrond.com>"]
+name = "elrond-wasm-sc-dns"
+version = "1.1.0"
 edition = "2018"
+
+authors = ["Andrei Marinica <andrei.marinica@elrond.com>", "Elrond Network <contact@elrond.com>"]
+license = "GPL-3.0-only"
+readme = "README.md"
+repository = "https://github.com/ElrondNetwork/sc-dns-rs"
+homepage = "https://elrond.com/"
+documentation = "https://docs.elrond.com/"
+description = "Elrond Domain Name Service smart contract"
+keywords = ["elrond", "wasm", "webassembly", "blockchain", "contract"]
+categories = ["no-std", "wasm", "cryptography::cryptocurrencies", "development-tools"]
 
 [features]
 wasm-output-mode = [
@@ -16,25 +25,25 @@ default = [
 
 [dependencies.elrond-wasm-module-features-wasm]
 package = "elrond-wasm-module-features"
-version = "0.14.2"
+version = "0.16.2"
 features = ["wasm-output-mode"]
 default-features = false
 optional = true
 
 [dependencies.elrond-wasm-module-features-default]
 package = "elrond-wasm-module-features"
-version = "0.14.2"
+version = "0.16.2"
 optional = true
 
 [dependencies.elrond-wasm]
-version = "0.14.2"
+version = "0.16.2"
 
 [dependencies.elrond-wasm-derive]
-version = "0.14.2"
+version = "0.16.2"
 
 [dependencies.elrond-wasm-node]
-version = "0.14.2"
+version = "0.16.2"
 optional = true
 
 [dev-dependencies.elrond-wasm-debug]
-version = "0.14.2"
+version = "0.16.2"
