@@ -25,25 +25,25 @@ default = [
 
 [dependencies.elrond-wasm-module-features-wasm]
 package = "elrond-wasm-module-features"
-version = "0.16.1"
+version = "0.16.2"
 features = ["wasm-output-mode"]
 default-features = false
 optional = true
 
 [dependencies.elrond-wasm-module-features-default]
 package = "elrond-wasm-module-features"
-version = "0.16.1"
+version = "0.16.2"
 optional = true
 
 [dependencies.elrond-wasm]
-version = "0.16.1"
+version = "0.16.2"
 
 [dependencies.elrond-wasm-derive]
-version = "0.16.1"
+version = "0.16.2"
 
 [dependencies.elrond-wasm-node]
-version = "0.16.1"
+version = "0.16.2"
 optional = true
 
 [dev-dependencies.elrond-wasm-debug]
-version = "0.16.1"
+version = "0.16.2"
