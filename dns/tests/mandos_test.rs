@@ -13,5 +13,5 @@ fn contract_map() -> ContractMap<TxContext> {
 
 #[test]
 fn test_mandos_main() {
-    parse_execute_mandos("mandos/main.scen.json", &contract_map());
+    elrond_wasm_debug::mandos_rs("mandos/main.scen.json", &contract_map());
 }
