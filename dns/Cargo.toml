@@ -13,37 +13,11 @@ description = "Elrond Domain Name Service smart contract"
 keywords = ["elrond", "wasm", "webassembly", "blockchain", "contract"]
 categories = ["no-std", "wasm", "cryptography::cryptocurrencies", "development-tools"]
 
-[features]
-wasm-output-mode = [
-    "elrond-wasm-node",
-    "elrond-wasm-module-features-wasm",
-]
-
-default = [
-    "elrond-wasm-module-features-default",
-]
-
-[dependencies.elrond-wasm-module-features-wasm]
-package = "elrond-wasm-module-features"
-version = "0.18.2"
-features = ["wasm-output-mode"]
-default-features = false
-optional = true
-
-[dependencies.elrond-wasm-module-features-default]
-package = "elrond-wasm-module-features"
-version = "0.18.2"
-optional = true
+[dependencies.elrond-wasm-module-features]
+version = "0.22.10"
 
 [dependencies.elrond-wasm]
-version = "0.18.2"
-
-[dependencies.elrond-wasm-derive]
-version = "0.18.2"
-
-[dependencies.elrond-wasm-node]
-version = "0.18.2"
-optional = true
+version = "0.22.10"
 
 [dev-dependencies.elrond-wasm-debug]
-version = "0.18.2"
+version = "0.22.10"

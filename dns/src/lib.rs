@@ -2,16 +2,11 @@
 #![allow(clippy::string_lit_as_bytes)]
 #![allow(clippy::ptr_arg)]
 
-#[cfg(feature = "elrond-wasm-module-features-default")]
-pub use elrond_wasm_module_features_default as features;
-#[cfg(feature = "elrond-wasm-module-features-wasm")]
-pub use elrond_wasm_module_features_wasm as features;
-
 pub mod name_validation;
 pub mod user_builtin;
 pub mod value_state;
 
-use features::feature_guard;
+use elrond_wasm_module_features as features;
 use value_state::*;
 
 elrond_wasm::imports!();
@@ -21,13 +16,13 @@ fn shard_id(addr: &H256) -> u8 {
     addr.as_bytes()[31]
 }
 
-#[elrond_wasm_derive::contract]
+#[elrond_wasm::derive::contract]
 pub trait Dns: features::FeaturesModule {
     #[proxy]
-    fn user_builtin_proxy(&self, to: Address) -> user_builtin::Proxy<Self::SendApi>;
+    fn user_builtin_proxy(&self, to: ManagedAddress) -> user_builtin::Proxy<Self::Api>;
 
     #[init]
-    fn init(&self, registration_cost: &Self::BigUint) {
+    fn init(&self, registration_cost: &BigUint) {
         self.set_registration_cost(registration_cost);
     }
 
@@ -41,7 +36,7 @@ pub trait Dns: features::FeaturesModule {
 
     /// `name_hash` is redundant, but passed to the method so we don't compute it twice.
     fn validate_register_input(&self, name: &BoxedBytes, name_hash: &H256) -> SCResult<()> {
-        feature_guard!(self, b"register", true);
+        self.check_feature_on(b"register", true);
 
         name_validation::validate_name(name.as_slice())?;
 
@@ -64,8 +59,8 @@ pub trait Dns: features::FeaturesModule {
     fn register(
         &self,
         name: BoxedBytes,
-        #[payment] payment: Self::BigUint,
-    ) -> SCResult<AsyncCall<Self::SendApi>> {
+        #[payment] payment: BigUint,
+    ) -> SCResult<AsyncCall> {
         let name_hash = self.name_hash(name.as_slice());
         self.validate_register_input(&name, &name_hash)?;
 
@@ -108,13 +103,13 @@ pub trait Dns: features::FeaturesModule {
     }
 
     #[view]
-    fn resolve(&self, name: &[u8]) -> OptionalResult<Address> {
+    fn resolve(&self, name: &[u8]) -> OptionalResult<ManagedAddress> {
         let name_hash = self.name_hash(name);
         self.resolve_from_hash(name_hash)
     }
 
     #[view(resolveFromHash)]
-    fn resolve_from_hash(&self, name_hash: H256) -> OptionalResult<Address> {
+    fn resolve_from_hash(&self, name_hash: H256) -> OptionalResult<ManagedAddress> {
         if shard_id(&name_hash) != self.get_own_shard_id() {
             return OptionalResult::None;
         }
@@ -128,7 +123,7 @@ pub trait Dns: features::FeaturesModule {
     }
 
     #[view(checkPending)]
-    fn check_pending(&self, name: &[u8]) -> OptionalResult<Address> {
+    fn check_pending(&self, name: &[u8]) -> OptionalResult<ManagedAddress> {
         let name_hash = self.name_hash(name);
         if shard_id(&name_hash) != self.get_own_shard_id() {
             return OptionalResult::None;
@@ -176,21 +171,21 @@ pub trait Dns: features::FeaturesModule {
 
     #[view(getRegistrationCost)]
     #[storage_get("registration_cost")]
-    fn get_registration_cost(&self) -> Self::BigUint;
+    fn get_registration_cost(&self) -> BigUint;
 
     #[storage_set("registration_cost")]
-    fn set_registration_cost(&self, registration_cost: &Self::BigUint);
+    fn set_registration_cost(&self, registration_cost: &BigUint);
 
     #[storage_get("value_state")]
-    fn get_value_state(&self, name_hash: &H256) -> ValueState;
+    fn get_value_state(&self, name_hash: &H256) -> ValueState<Self::Api>;
 
     #[storage_set("value_state")]
-    fn set_value_state(&self, name_hash: &H256, value_state: &ValueState);
+    fn set_value_state(&self, name_hash: &H256, value_state: &ValueState<Self::Api>);
 
     // UTILS
 
     #[view(getContractOwner)]
-    fn get_owner_address_endpoint(&self) -> Address {
+    fn get_owner_address_endpoint(&self) -> ManagedAddress {
         self.blockchain().get_owner_address()
     }
 

@@ -16,11 +16,12 @@ panic = "abort"
 
 [dependencies.elrond-wasm-sc-dns]
 path = ".."
-features=["wasm-output-mode"]
-default-features = false
+
+[dependencies.elrond-wasm-node]
+version = "0.22.10"
 
 [dependencies.elrond-wasm-output]
-version = "0.18.2"
+version = "0.22.10"
 features = ["wasm-output-mode"]
 
 # Prevent this from interfering with workspaces

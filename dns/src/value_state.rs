@@ -1,16 +1,16 @@
-use elrond_wasm::types::Address;
+use elrond_wasm::{api::ManagedTypeApi, types::ManagedAddress};
 
 elrond_wasm::derive_imports!();
 
 /// Copied from elrond-wasm serialization tests.
 #[derive(NestedEncode, NestedDecode, TopEncode, TopDecode, TypeAbi, PartialEq, Debug)]
-pub enum ValueState {
+pub enum ValueState<M: ManagedTypeApi> {
     None,
-    Pending(Address),
-    Committed(Address),
+    Pending(ManagedAddress<M>),
+    Committed(ManagedAddress<M>),
 }
 
-impl ValueState {
+impl<M: ManagedTypeApi> ValueState<M> {
     pub fn is_available(&self) -> bool {
         matches!(self, ValueState::None)
     }
