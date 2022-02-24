@@ -38,7 +38,7 @@ pub trait Dns: elrond_wasm_modules::features::FeaturesModule {
     fn validate_register_input(&self, name: &ManagedBuffer, name_hash: &NameHash<Self::Api>) {
         self.check_feature_on(b"register", true);
 
-        self.validate_name(name.to_boxed_bytes().as_slice());
+        self.validate_name(name);
 
         self.validate_name_shard(name_hash);
 
@@ -193,7 +193,7 @@ pub trait Dns: elrond_wasm_modules::features::FeaturesModule {
     }
 
     #[view(validateName)]
-    fn validate_name(&self, name: &[u8]) {
+    fn validate_name(&self, name: &ManagedBuffer) {
         name_validation::validate_name(name).unwrap_or_else(|err| sc_panic!(err));
     }
 
