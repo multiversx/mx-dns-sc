@@ -42,7 +42,7 @@ pub trait Dns: elrond_wasm_modules::features::FeaturesModule {
 
         self.validate_name_shard(name_hash);
 
-        let vs = self.get_value_state(&name_hash);
+        let vs = self.get_value_state(name_hash);
         require!(vs.is_available(), "name already taken");
     }
 
@@ -82,7 +82,7 @@ pub trait Dns: elrond_wasm_modules::features::FeaturesModule {
         match result {
             AsyncCallResult::Ok(()) => {
                 // commit
-                let vm = self.get_value_state(&cb_name_hash);
+                let vm = self.get_value_state(cb_name_hash);
                 if let ValueState::Pending(addr) = vm {
                     self.set_value_state(cb_name_hash, &ValueState::Committed(addr));
                 } else {
