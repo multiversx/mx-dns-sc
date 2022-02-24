@@ -1,4 +1,21 @@
 {
+    "buildInfo": {
+        "rustc": {
+            "version": "1.60.0-nightly",
+            "commitHash": "1e12aef3fab243407f9d71ba9956cb2a1bf105d5",
+            "commitDate": "2022-02-13",
+            "channel": "Nightly",
+            "short": "rustc 1.60.0-nightly (1e12aef3f 2022-02-13)"
+        },
+        "contractCrate": {
+            "name": "elrond-wasm-sc-dns",
+            "version": "1.1.0"
+        },
+        "framework": {
+            "name": "elrond-wasm",
+            "version": "0.28.0"
+        }
+    },
     "name": "Dns",
     "constructor": {
         "inputs": [
@@ -12,6 +29,7 @@
     "endpoints": [
         {
             "name": "canRegister",
+            "mutability": "readonly",
             "inputs": [
                 {
                     "name": "name",
@@ -22,6 +40,7 @@
         },
         {
             "name": "register",
+            "mutability": "mutable",
             "payableInTokens": [
                 "EGLD"
             ],
@@ -35,6 +54,7 @@
         },
         {
             "name": "resolve",
+            "mutability": "readonly",
             "inputs": [
                 {
                     "name": "name",
@@ -50,10 +70,11 @@
         },
         {
             "name": "resolveFromHash",
+            "mutability": "readonly",
             "inputs": [
                 {
                     "name": "name_hash",
-                    "type": "H256"
+                    "type": "array32<u8>"
                 }
             ],
             "outputs": [
@@ -65,6 +86,7 @@
         },
         {
             "name": "checkPending",
+            "mutability": "readonly",
             "inputs": [
                 {
                     "name": "name",
@@ -80,6 +102,8 @@
         },
         {
             "name": "resetPending",
+            "onlyOwner": true,
+            "mutability": "readonly",
             "inputs": [
                 {
                     "name": "name",
@@ -90,11 +114,14 @@
         },
         {
             "name": "claim",
+            "onlyOwner": true,
+            "mutability": "mutable",
             "inputs": [],
             "outputs": []
         },
         {
             "name": "getRegistrationCost",
+            "mutability": "readonly",
             "inputs": [],
             "outputs": [
                 {
@@ -104,6 +131,7 @@
         },
         {
             "name": "getContractOwner",
+            "mutability": "readonly",
             "inputs": [],
             "outputs": [
                 {
@@ -113,6 +141,7 @@
         },
         {
             "name": "getOwnShardId",
+            "mutability": "readonly",
             "inputs": [],
             "outputs": [
                 {
@@ -122,6 +151,7 @@
         },
         {
             "name": "nameHash",
+            "mutability": "readonly",
             "inputs": [
                 {
                     "name": "name",
@@ -130,12 +160,13 @@
             ],
             "outputs": [
                 {
-                    "type": "H256"
+                    "type": "array32<u8>"
                 }
             ]
         },
         {
             "name": "nameShard",
+            "mutability": "readonly",
             "inputs": [
                 {
                     "name": "name",
@@ -150,6 +181,7 @@
         },
         {
             "name": "validateName",
+            "mutability": "readonly",
             "inputs": [
                 {
                     "name": "name",
@@ -160,6 +192,7 @@
         },
         {
             "name": "version",
+            "mutability": "readonly",
             "inputs": [],
             "outputs": [
                 {
@@ -169,6 +202,7 @@
         },
         {
             "name": "setFeatureFlag",
+            "mutability": "mutable",
             "inputs": [
                 {
                     "name": "feature_name",
@@ -182,5 +216,6 @@
             "outputs": []
         }
     ],
+    "hasCallback": true,
     "types": {}
 }
