@@ -1,17 +1,15 @@
-use elrond_wasm::*;
 use elrond_wasm_debug::*;
 
-#[allow(dead_code)]
-fn contract_map() -> ContractMap<TxContext> {
-    let mut contract_map = ContractMap::new();
-    contract_map.register_contract(
-        "file:../output/dns.wasm",
-        Box::new(|context| Box::new(elrond_wasm_sc_dns::contract_obj(context))),
-    );
-    contract_map
+fn world() -> BlockchainMock {
+    let mut blockchain = BlockchainMock::new();
+    blockchain.set_current_dir_from_workspace("dns");
+
+    blockchain
+        .register_contract_builder("file:output/elrond-wasm-sc-dns.wasm", elrond_wasm_sc_dns::ContractBuilder);
+    blockchain
 }
 
 #[test]
-fn test_mandos_main() {
-    elrond_wasm_debug::mandos_rs("mandos/main.scen.json", &contract_map());
+fn test_mandos_main_rs() {
+    elrond_wasm_debug::mandos_rs("mandos/main.scen.json", world());
 }

@@ -6,18 +6,19 @@ pub mod name_validation;
 pub mod user_builtin;
 pub mod value_state;
 
-use elrond_wasm_module_features as features;
 use value_state::*;
 
 elrond_wasm::imports!();
 
+type NameHash<M> = ManagedByteArray<M, 32>;
+
 #[inline]
-fn shard_id(addr: &H256) -> u8 {
-    addr.as_bytes()[31]
+fn shard_id(addr_bytes: &[u8; 32]) -> u8 {
+    addr_bytes[31]
 }
 
 #[elrond_wasm::derive::contract]
-pub trait Dns: features::FeaturesModule {
+pub trait Dns: elrond_wasm_modules::features::FeaturesModule {
     #[proxy]
     fn user_builtin_proxy(&self, to: ManagedAddress) -> user_builtin::Proxy<Self::Api>;
 
@@ -26,43 +27,36 @@ pub trait Dns: features::FeaturesModule {
         self.set_registration_cost(registration_cost);
     }
 
-    fn validate_name_shard(&self, name_hash: &H256) -> SCResult<()> {
+    fn validate_name_shard(&self, name_hash: &NameHash<Self::Api>) {
         require!(
-            shard_id(&name_hash) == self.get_own_shard_id(),
+            shard_id(&name_hash.to_byte_array()) == self.get_own_shard_id(),
             "name belongs to another shard"
         );
-        Ok(())
     }
 
     /// `name_hash` is redundant, but passed to the method so we don't compute it twice.
-    fn validate_register_input(&self, name: &BoxedBytes, name_hash: &H256) -> SCResult<()> {
+    fn validate_register_input(&self, name: &ManagedBuffer, name_hash: &NameHash<Self::Api>) {
         self.check_feature_on(b"register", true);
 
-        name_validation::validate_name(name.as_slice())?;
+        self.validate_name(name.to_boxed_bytes().as_slice());
 
-        self.validate_name_shard(name_hash)?;
+        self.validate_name_shard(name_hash);
 
         let vs = self.get_value_state(&name_hash);
         require!(vs.is_available(), "name already taken");
-
-        Ok(())
     }
 
     #[view(canRegister)]
-    fn can_register(&self, name: BoxedBytes) -> SCResult<()> {
-        let name_hash = self.name_hash(name.as_slice());
+    fn can_register(&self, name: ManagedBuffer) {
+        let name_hash = self.name_hash(&name);
         self.validate_register_input(&name, &name_hash)
     }
 
     #[payable("EGLD")]
     #[endpoint]
-    fn register(
-        &self,
-        name: BoxedBytes,
-        #[payment] payment: BigUint,
-    ) -> SCResult<AsyncCall> {
-        let name_hash = self.name_hash(name.as_slice());
-        self.validate_register_input(&name, &name_hash)?;
+    fn register(&self, name: ManagedBuffer, #[payment] payment: BigUint) {
+        let name_hash = self.name_hash(&name);
+        self.validate_register_input(&name, &name_hash);
 
         require!(
             payment == self.get_registration_cost(),
@@ -72,17 +66,17 @@ pub trait Dns: features::FeaturesModule {
         let address = self.blockchain().get_caller();
         self.set_value_state(&name_hash, &ValueState::Pending(address.clone()));
 
-        Ok(self
-            .user_builtin_proxy(address)
+        self.user_builtin_proxy(address)
             .set_user_name(&name)
             .async_call()
-            .with_callback(self.callbacks().set_user_name_callback(&name_hash)))
+            .with_callback(self.callbacks().set_user_name_callback(&name_hash))
+            .call_and_exit()
     }
 
     #[callback]
     fn set_user_name_callback(
         &self,
-        cb_name_hash: &H256,
+        cb_name_hash: &NameHash<Self::Api>,
         #[call_result] result: AsyncCallResult<()>,
     ) {
         match result {
@@ -103,59 +97,55 @@ pub trait Dns: features::FeaturesModule {
     }
 
     #[view]
-    fn resolve(&self, name: &[u8]) -> OptionalResult<ManagedAddress> {
+    fn resolve(&self, name: &ManagedBuffer) -> OptionalValue<ManagedAddress> {
         let name_hash = self.name_hash(name);
         self.resolve_from_hash(name_hash)
     }
 
     #[view(resolveFromHash)]
-    fn resolve_from_hash(&self, name_hash: H256) -> OptionalResult<ManagedAddress> {
-        if shard_id(&name_hash) != self.get_own_shard_id() {
-            return OptionalResult::None;
+    fn resolve_from_hash(&self, name_hash: NameHash<Self::Api>) -> OptionalValue<ManagedAddress> {
+        if shard_id(&name_hash.to_byte_array()) != self.get_own_shard_id() {
+            return OptionalValue::None;
         }
 
         let vs = self.get_value_state(&name_hash);
         if let ValueState::Committed(address) = vs {
-            OptionalResult::Some(address)
+            OptionalValue::Some(address)
         } else {
-            OptionalResult::None
+            OptionalValue::None
         }
     }
 
     #[view(checkPending)]
-    fn check_pending(&self, name: &[u8]) -> OptionalResult<ManagedAddress> {
+    fn check_pending(&self, name: &ManagedBuffer) -> OptionalValue<ManagedAddress> {
         let name_hash = self.name_hash(name);
-        if shard_id(&name_hash) != self.get_own_shard_id() {
-            return OptionalResult::None;
+        if shard_id(&name_hash.to_byte_array()) != self.get_own_shard_id() {
+            return OptionalValue::None;
         }
 
         let vs = self.get_value_state(&name_hash);
         if let ValueState::Pending(address) = vs {
-            OptionalResult::Some(address)
+            OptionalValue::Some(address)
         } else {
-            OptionalResult::None
+            OptionalValue::None
         }
     }
 
+    #[only_owner]
     #[view(resetPending)]
-    fn reset_pending(&self, name: &[u8]) -> SCResult<()> {
-        only_owner!(self, "only owner can resetPending");
-
+    fn reset_pending(&self, name: &ManagedBuffer) {
         let name_hash = self.name_hash(name);
-        self.validate_name_shard(&name_hash)?;
+        self.validate_name_shard(&name_hash);
 
         let vs = self.get_value_state(&name_hash);
         if let ValueState::Pending(_) = vs {
             self.set_value_state(&name_hash, &ValueState::None);
         }
-
-        Ok(())
     }
 
+    #[only_owner]
     #[endpoint]
-    fn claim(&self) -> SCResult<()> {
-        only_owner!(self, "only owner can claim");
-
+    fn claim(&self) {
         self.send().direct_egld(
             &self.blockchain().get_caller(),
             &self
@@ -163,8 +153,6 @@ pub trait Dns: features::FeaturesModule {
                 .get_sc_balance(&TokenIdentifier::egld(), 0),
             b"dns claim",
         );
-
-        Ok(())
     }
 
     // STORAGE
@@ -177,10 +165,10 @@ pub trait Dns: features::FeaturesModule {
     fn set_registration_cost(&self, registration_cost: &BigUint);
 
     #[storage_get("value_state")]
-    fn get_value_state(&self, name_hash: &H256) -> ValueState<Self::Api>;
+    fn get_value_state(&self, name_hash: &NameHash<Self::Api>) -> ValueState<Self::Api>;
 
     #[storage_set("value_state")]
-    fn set_value_state(&self, name_hash: &H256, value_state: &ValueState<Self::Api>);
+    fn set_value_state(&self, name_hash: &NameHash<Self::Api>, value_state: &ValueState<Self::Api>);
 
     // UTILS
 
@@ -191,22 +179,22 @@ pub trait Dns: features::FeaturesModule {
 
     #[view(getOwnShardId)]
     fn get_own_shard_id(&self) -> u8 {
-        shard_id(&self.blockchain().get_sc_address().into())
+        shard_id(&self.blockchain().get_sc_address().to_byte_array())
     }
 
     #[view(nameHash)]
-    fn name_hash(&self, name: &[u8]) -> H256 {
+    fn name_hash(&self, name: &ManagedBuffer) -> NameHash<Self::Api> {
         self.crypto().keccak256(name)
     }
 
     #[view(nameShard)]
-    fn name_shard(&self, name: &[u8]) -> u8 {
-        shard_id(&self.name_hash(&name))
+    fn name_shard(&self, name: &ManagedBuffer) -> u8 {
+        shard_id(&self.name_hash(name).to_byte_array())
     }
 
     #[view(validateName)]
-    fn validate_name(&self, name: &[u8]) -> SCResult<()> {
-        name_validation::validate_name(name)
+    fn validate_name(&self, name: &[u8]) {
+        name_validation::validate_name(name).unwrap_or_else(|err| sc_panic!(err));
     }
 
     // METADATA

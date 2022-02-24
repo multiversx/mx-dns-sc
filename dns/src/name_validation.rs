@@ -17,32 +17,32 @@ fn check_name_char(ch: u8) -> bool {
     false
 }
 
-pub fn validate_name(name: &[u8]) -> SCResult<()> {
+pub fn validate_name(name: &[u8]) -> Result<(), &'static str> {
     if name.len() <= NAME_SUFFIX.len() {
-        return sc_error!("name does not contain suffix");
+        return Result::Err("name does not contain suffix");
     }
 
     if name.len() > MAX_LENGTH {
-        return sc_error!("name too long");
+        return Result::Err("name too long");
     }
 
     let (name_without_suffix, suffix) = name.split_at(name.len() - NAME_SUFFIX.len());
 
     if suffix != NAME_SUFFIX {
-        return sc_error!("wrong suffix");
+        return Result::Err("wrong suffix");
     }
 
     if name_without_suffix.len() < MIN_LENGTH {
-        return sc_error!("name is too short");
+        return Result::Err("name is too short");
     }
 
     for ch in name_without_suffix.iter() {
         if !check_name_char(*ch) {
-            return sc_error!("character not allowed");
+            return Result::Err("character not allowed");
         }
     }
 
-    Ok(())
+    Result::Ok(())
 }
 
 #[cfg(test)]

@@ -1,5 +1,5 @@
 [package]
-name = "dns-wasm"
+name = "elrond-wasm-sc-dns-wasm"
 version = "0.0.0"
 authors = ["andrei-marinica <andrei_m_marinica@yahoo.com>"]
 edition = "2018"
@@ -18,10 +18,10 @@ panic = "abort"
 path = ".."
 
 [dependencies.elrond-wasm-node]
-version = "0.22.10"
+version = "0.28.0"
 
 [dependencies.elrond-wasm-output]
-version = "0.22.10"
+version = "0.28.0"
 features = ["wasm-output-mode"]
 
 # Prevent this from interfering with workspaces
