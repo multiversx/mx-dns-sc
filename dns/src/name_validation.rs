@@ -28,8 +28,8 @@ pub fn validate_name<M: ManagedTypeApi>(name: &ManagedBuffer<M>) -> Result<(), &
     }
 
     let mut name_bytes = [0u8; MAX_LENGTH];
-    let mut name_slice = &mut name_bytes[..name_len];
-    if name.load_slice(0, &mut name_slice).is_err() {
+    let name_slice = &mut name_bytes[..name_len];
+    if name.load_slice(0, name_slice).is_err() {
         return Result::Err("error loading name bytes");
     }
 
