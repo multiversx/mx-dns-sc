@@ -77,10 +77,10 @@ pub trait Dns: elrond_wasm_modules::features::FeaturesModule {
     fn set_user_name_callback(
         &self,
         cb_name_hash: &NameHash<Self::Api>,
-        #[call_result] result: AsyncCallResult<()>,
+        #[call_result] result: ManagedAsyncCallResult<()>,
     ) {
         match result {
-            AsyncCallResult::Ok(()) => {
+            ManagedAsyncCallResult::Ok(()) => {
                 // commit
                 let vm = self.get_value_state(cb_name_hash);
                 if let ValueState::Pending(addr) = vm {
@@ -89,7 +89,7 @@ pub trait Dns: elrond_wasm_modules::features::FeaturesModule {
                     self.set_value_state(cb_name_hash, &ValueState::None);
                 }
             }
-            AsyncCallResult::Err(_) => {
+            ManagedAsyncCallResult::Err(_) => {
                 // revert
                 self.set_value_state(cb_name_hash, &ValueState::None);
             }
