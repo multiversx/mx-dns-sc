@@ -1,7 +1,7 @@
 elrond_wasm::imports!();
 
 const MIN_LENGTH: usize = 3;
-const MAX_LENGTH: usize = 32;
+pub const MAX_LENGTH: usize = 32;
 const NAME_SUFFIX: &[u8] = b".elrond";
 
 #[allow(clippy::manual_range_contains)]
