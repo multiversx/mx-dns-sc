@@ -6,6 +6,7 @@ pub mod name_validation;
 pub mod user_builtin;
 pub mod value_state;
 
+use name_validation::MAX_LENGTH;
 use value_state::*;
 
 elrond_wasm::imports!();
@@ -38,7 +39,7 @@ pub trait Dns: elrond_wasm_modules::features::FeaturesModule {
     fn validate_register_input(&self, name: &ManagedBuffer, name_hash: &NameHash<Self::Api>) {
         self.check_feature_on(b"register", true);
 
-        self.validate_name(name.to_boxed_bytes().as_slice());
+        self.validate_name(name);
 
         self.validate_name_shard(name_hash);
 
@@ -77,10 +78,10 @@ pub trait Dns: elrond_wasm_modules::features::FeaturesModule {
     fn set_user_name_callback(
         &self,
         cb_name_hash: &NameHash<Self::Api>,
-        #[call_result] result: AsyncCallResult<()>,
+        #[call_result] result: ManagedAsyncCallResult<()>,
     ) {
         match result {
-            AsyncCallResult::Ok(()) => {
+            ManagedAsyncCallResult::Ok(()) => {
                 // commit
                 let vm = self.get_value_state(cb_name_hash);
                 if let ValueState::Pending(addr) = vm {
@@ -89,7 +90,7 @@ pub trait Dns: elrond_wasm_modules::features::FeaturesModule {
                     self.set_value_state(cb_name_hash, &ValueState::None);
                 }
             }
-            AsyncCallResult::Err(_) => {
+            ManagedAsyncCallResult::Err(_) => {
                 // revert
                 self.set_value_state(cb_name_hash, &ValueState::None);
             }
@@ -184,7 +185,7 @@ pub trait Dns: elrond_wasm_modules::features::FeaturesModule {
 
     #[view(nameHash)]
     fn name_hash(&self, name: &ManagedBuffer) -> NameHash<Self::Api> {
-        self.crypto().keccak256(name)
+        self.crypto().keccak256_legacy_managed::<MAX_LENGTH>(name)
     }
 
     #[view(nameShard)]
@@ -193,7 +194,7 @@ pub trait Dns: elrond_wasm_modules::features::FeaturesModule {
     }
 
     #[view(validateName)]
-    fn validate_name(&self, name: &[u8]) {
+    fn validate_name(&self, name: &ManagedBuffer) {
         name_validation::validate_name(name).unwrap_or_else(|err| sc_panic!(err));
     }
 
