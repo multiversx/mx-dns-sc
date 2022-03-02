@@ -1,0 +1,69 @@
+name: Create release
+
+on:
+  workflow_dispatch:
+
+env:
+  # https://github.com/actions/runner/issues/863 ($HOME is overridden for containers)
+  ELROND_HOME: /home/elrond
+  REPO_PATH: /home/elrond/sc-dns-rs
+  REPO_URL: https://github.com/ElrondNetwork/sc-dns-rs.git
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # See: https://docs.github.com/en/actions/using-jobs/running-jobs-in-a-container
+    container: 
+      image: elrondnetwork/elrond-sdk-erdpy-rust:latest
+    steps:
+      # We don't use actions/checkout, since we want to control the location of the repository,
+      # in order to achieve deterministic builds.
+      - name: Check out code
+        run: |
+          echo "Cloning ref: $GITHUB_REF_NAME"
+          cd $ELROND_HOME && git clone $REPO_URL --branch=$GITHUB_REF_NAME --depth=1
+
+      - name: Build WASM files
+        run: |
+          # Setting $HOME is required by erdpy.
+          export HOME=$ELROND_HOME
+          cd $REPO_PATH && bash ./build-wasm.sh
+
+      - name: Save artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: built-contracts
+          path: |
+            ${{ env.REPO_PATH }}/**/output/*.wasm
+            ${{ env.REPO_PATH }}/**/output/*.abi.json
+          if-no-files-found: error
+
+  release:
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: "0"
+
+      - name: Download all workflow artifacts
+        uses: actions/download-artifact@v2
+        with:
+          path: assets
+
+      - name: Create release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "## Checksums (SHA 256):" >> notes.txt
+          echo "" >> notes.txt
+
+          for i in $(find ./assets -type f); do
+            filename=$(basename ${i})
+            checksum=($(sha256sum ${i}))
+            echo " - **${filename}**: \`${checksum}\`" >> notes.txt
+          done
+
+          gh release create vNext --draft --title="Release draft from Github Actions" --generate-notes --notes-file=notes.txt
+          gh release upload vNext $(find ./assets -type f)
