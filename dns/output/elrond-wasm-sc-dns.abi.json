@@ -2,18 +2,19 @@
     "buildInfo": {
         "rustc": {
             "version": "1.61.0-nightly",
-            "commitHash": "4ce3749235fc31d15ebd444b038a9877e8c700d7",
-            "commitDate": "2022-02-28",
+            "commitHash": "52b34550aca5f7dd7e152f773e3ab786acb86f6f",
+            "commitDate": "2022-03-15",
             "channel": "Nightly",
-            "short": "rustc 1.61.0-nightly (4ce374923 2022-02-28)"
+            "short": "rustc 1.61.0-nightly (52b34550a 2022-03-15)"
         },
         "contractCrate": {
             "name": "elrond-wasm-sc-dns",
-            "version": "1.1.0"
+            "version": "1.1.0",
+            "git_version": "ce8c10b-modified"
         },
         "framework": {
             "name": "elrond-wasm",
-            "version": "0.29.2"
+            "version": "0.31.1"
         }
     },
     "name": "Dns",
