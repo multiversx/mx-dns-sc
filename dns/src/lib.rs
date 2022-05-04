@@ -6,7 +6,6 @@ pub mod name_validation;
 pub mod user_builtin;
 pub mod value_state;
 
-use name_validation::MAX_LENGTH;
 use value_state::*;
 
 elrond_wasm::imports!();
@@ -185,7 +184,7 @@ pub trait Dns: elrond_wasm_modules::features::FeaturesModule {
 
     #[view(nameHash)]
     fn name_hash(&self, name: &ManagedBuffer) -> NameHash<Self::Api> {
-        self.crypto().keccak256_legacy_managed::<MAX_LENGTH>(name)
+        self.crypto().keccak256(name)
     }
 
     #[view(nameShard)]
