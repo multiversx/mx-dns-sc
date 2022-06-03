@@ -54,7 +54,8 @@ pub trait Dns: elrond_wasm_modules::features::FeaturesModule {
 
     #[payable("EGLD")]
     #[endpoint]
-    fn register(&self, name: ManagedBuffer, #[payment] payment: BigUint) {
+    fn register(&self, name: ManagedBuffer) {
+        let payment = self.call_value().egld_value();
         let name_hash = self.name_hash(&name);
         self.validate_register_input(&name, &name_hash);
 
@@ -150,7 +151,7 @@ pub trait Dns: elrond_wasm_modules::features::FeaturesModule {
             &self.blockchain().get_caller(),
             &self
                 .blockchain()
-                .get_sc_balance(&TokenIdentifier::egld(), 0),
+                .get_sc_balance(&EgldOrEsdtTokenIdentifier::egld(), 0),
             b"dns claim",
         );
     }
