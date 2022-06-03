@@ -1,20 +1,20 @@
 {
     "buildInfo": {
         "rustc": {
-            "version": "1.61.0-nightly",
-            "commitHash": "52b34550aca5f7dd7e152f773e3ab786acb86f6f",
-            "commitDate": "2022-03-15",
+            "version": "1.63.0-nightly",
+            "commitHash": "76761db5919b6d2e178b26947ad9b4fcb0ff0e7c",
+            "commitDate": "2022-05-24",
             "channel": "Nightly",
-            "short": "rustc 1.61.0-nightly (52b34550a 2022-03-15)"
+            "short": "rustc 1.63.0-nightly (76761db59 2022-05-24)"
         },
         "contractCrate": {
             "name": "elrond-wasm-sc-dns",
             "version": "1.1.0",
-            "git_version": "ce8c10b-modified"
+            "git_version": "a4c1ad5-modified"
         },
         "framework": {
             "name": "elrond-wasm",
-            "version": "0.31.1"
+            "version": "0.32.0"
         }
     },
     "name": "Dns",
@@ -141,6 +141,9 @@
             ]
         },
         {
+            "docs": [
+                "Incorrectly named, it should actually read the `sibling id` or `contract id`."
+            ],
             "name": "getOwnShardId",
             "mutability": "readonly",
             "inputs": [],
@@ -166,6 +169,9 @@
             ]
         },
         {
+            "docs": [
+                "Incorrectly named, it is the contract id that corresponds to the given name, from 0 to 255."
+            ],
             "name": "nameShard",
             "mutability": "readonly",
             "inputs": [
@@ -218,6 +224,7 @@
             "outputs": []
         }
     ],
+    "events": [],
     "hasCallback": true,
     "types": {}
 }
