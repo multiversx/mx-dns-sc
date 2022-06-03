@@ -12,8 +12,13 @@ elrond_wasm::imports!();
 
 type NameHash<M> = ManagedByteArray<M, 32>;
 
+/// There are 256 DNS contracts deployed, each one processes some of the addresses.
+///
+/// The last byte of each address is the contract (or sibling) id, and they go from 0 to 255.
+///
+/// The contracts get split among shards, but there is no direct correspondence between the id and the shard id.
 #[inline]
-fn shard_id(addr_bytes: &[u8; 32]) -> u8 {
+fn sibling_id(addr_bytes: &[u8; 32]) -> u8 {
     addr_bytes[31]
 }
 
@@ -29,7 +34,7 @@ pub trait Dns: elrond_wasm_modules::features::FeaturesModule {
 
     fn validate_name_shard(&self, name_hash: &NameHash<Self::Api>) {
         require!(
-            shard_id(&name_hash.to_byte_array()) == self.get_own_shard_id(),
+            sibling_id(&name_hash.to_byte_array()) == self.get_own_sibling_id(),
             "name belongs to another shard"
         );
     }
@@ -105,7 +110,7 @@ pub trait Dns: elrond_wasm_modules::features::FeaturesModule {
 
     #[view(resolveFromHash)]
     fn resolve_from_hash(&self, name_hash: NameHash<Self::Api>) -> OptionalValue<ManagedAddress> {
-        if shard_id(&name_hash.to_byte_array()) != self.get_own_shard_id() {
+        if sibling_id(&name_hash.to_byte_array()) != self.get_own_sibling_id() {
             return OptionalValue::None;
         }
 
@@ -120,7 +125,7 @@ pub trait Dns: elrond_wasm_modules::features::FeaturesModule {
     #[view(checkPending)]
     fn check_pending(&self, name: &ManagedBuffer) -> OptionalValue<ManagedAddress> {
         let name_hash = self.name_hash(name);
-        if shard_id(&name_hash.to_byte_array()) != self.get_own_shard_id() {
+        if sibling_id(&name_hash.to_byte_array()) != self.get_own_sibling_id() {
             return OptionalValue::None;
         }
 
@@ -178,9 +183,10 @@ pub trait Dns: elrond_wasm_modules::features::FeaturesModule {
         self.blockchain().get_owner_address()
     }
 
+    /// Incorrectly named, it should actually read the `sibling id` or `contract id`.
     #[view(getOwnShardId)]
-    fn get_own_shard_id(&self) -> u8 {
-        shard_id(&self.blockchain().get_sc_address().to_byte_array())
+    fn get_own_sibling_id(&self) -> u8 {
+        sibling_id(&self.blockchain().get_sc_address().to_byte_array())
     }
 
     #[view(nameHash)]
@@ -188,9 +194,10 @@ pub trait Dns: elrond_wasm_modules::features::FeaturesModule {
         self.crypto().keccak256(name)
     }
 
+    /// Incorrectly named, it is the contract id that corresponds to the given name, from 0 to 255.
     #[view(nameShard)]
     fn name_shard(&self, name: &ManagedBuffer) -> u8 {
-        shard_id(&self.name_hash(name).to_byte_array())
+        sibling_id(&self.name_hash(name).to_byte_array())
     }
 
     #[view(validateName)]
