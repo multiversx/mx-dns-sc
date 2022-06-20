@@ -157,7 +157,6 @@ pub trait Dns: elrond_wasm_modules::features::FeaturesModule {
             &self
                 .blockchain()
                 .get_sc_balance(&EgldOrEsdtTokenIdentifier::egld(), 0),
-            b"dns claim",
         );
     }
 
