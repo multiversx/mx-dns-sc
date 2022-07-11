@@ -10,11 +10,11 @@
         "contractCrate": {
             "name": "elrond-wasm-sc-dns",
             "version": "1.1.0",
-            "git_version": "6e17ef6-modified"
+            "git_version": "220eabc-modified"
         },
         "framework": {
             "name": "elrond-wasm",
-            "version": "0.33.0"
+            "version": "0.34.0"
         }
     },
     "name": "Dns",
