@@ -4,7 +4,7 @@ fn world() -> BlockchainMock {
     let mut blockchain = BlockchainMock::new();
     blockchain.set_current_dir_from_workspace("dns");
 
-    blockchain.register_contract_builder(
+    blockchain.register_contract(
         "file:output/elrond-wasm-sc-dns.wasm",
         elrond_wasm_sc_dns::ContractBuilder,
     );
