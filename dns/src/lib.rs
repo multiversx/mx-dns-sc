@@ -1,12 +1,10 @@
 #![no_std]
-#![allow(clippy::string_lit_as_bytes)]
-#![allow(clippy::ptr_arg)]
 
 pub mod name_validation;
 pub mod user_builtin;
 pub mod value_state;
 
-use value_state::*;
+use value_state::ValueState;
 
 elrond_wasm::imports!();
 
@@ -22,14 +20,14 @@ fn sibling_id(addr_bytes: &[u8; 32]) -> u8 {
     addr_bytes[31]
 }
 
-#[elrond_wasm::derive::contract]
+#[elrond_wasm::contract]
 pub trait Dns: elrond_wasm_modules::features::FeaturesModule {
     #[proxy]
     fn user_builtin_proxy(&self, to: ManagedAddress) -> user_builtin::Proxy<Self::Api>;
 
     #[init]
     fn init(&self, registration_cost: &BigUint) {
-        self.set_registration_cost(registration_cost);
+        self.registration_cost().set(registration_cost);
     }
 
     fn validate_name_shard(&self, name_hash: &NameHash<Self::Api>) {
@@ -47,7 +45,7 @@ pub trait Dns: elrond_wasm_modules::features::FeaturesModule {
 
         self.validate_name_shard(name_hash);
 
-        let vs = self.get_value_state(name_hash);
+        let vs = self.value_state(name_hash).get();
         require!(vs.is_available(), "name already taken");
     }
 
@@ -65,12 +63,13 @@ pub trait Dns: elrond_wasm_modules::features::FeaturesModule {
         self.validate_register_input(&name, &name_hash);
 
         require!(
-            payment == self.get_registration_cost(),
+            payment == self.registration_cost().get(),
             "should pay exactly the registration cost"
         );
 
         let address = self.blockchain().get_caller();
-        self.set_value_state(&name_hash, &ValueState::Pending(address.clone()));
+        self.value_state(&name_hash)
+            .set(&ValueState::Pending(address.clone()));
 
         self.user_builtin_proxy(address)
             .set_user_name(&name)
@@ -88,16 +87,17 @@ pub trait Dns: elrond_wasm_modules::features::FeaturesModule {
         match result {
             ManagedAsyncCallResult::Ok(()) => {
                 // commit
-                let vm = self.get_value_state(cb_name_hash);
-                if let ValueState::Pending(addr) = vm {
-                    self.set_value_state(cb_name_hash, &ValueState::Committed(addr));
-                } else {
-                    self.set_value_state(cb_name_hash, &ValueState::None);
-                }
+                self.value_state(cb_name_hash).update(|vs| {
+                    *vs = if let ValueState::Pending(addr) = vs {
+                        ValueState::Committed(addr.clone())
+                    } else {
+                        ValueState::None
+                    }
+                });
             }
             ManagedAsyncCallResult::Err(_) => {
                 // revert
-                self.set_value_state(cb_name_hash, &ValueState::None);
+                self.value_state(cb_name_hash).set(&ValueState::None);
             }
         }
     }
@@ -114,7 +114,7 @@ pub trait Dns: elrond_wasm_modules::features::FeaturesModule {
             return OptionalValue::None;
         }
 
-        let vs = self.get_value_state(&name_hash);
+        let vs = self.value_state(&name_hash).get();
         if let ValueState::Committed(address) = vs {
             OptionalValue::Some(address)
         } else {
@@ -129,7 +129,7 @@ pub trait Dns: elrond_wasm_modules::features::FeaturesModule {
             return OptionalValue::None;
         }
 
-        let vs = self.get_value_state(&name_hash);
+        let vs = self.value_state(&name_hash).get();
         if let ValueState::Pending(address) = vs {
             OptionalValue::Some(address)
         } else {
@@ -143,9 +143,10 @@ pub trait Dns: elrond_wasm_modules::features::FeaturesModule {
         let name_hash = self.name_hash(name);
         self.validate_name_shard(&name_hash);
 
-        let vs = self.get_value_state(&name_hash);
+        let vs_mapper = self.value_state(&name_hash);
+        let vs = vs_mapper.get();
         if let ValueState::Pending(_) = vs {
-            self.set_value_state(&name_hash, &ValueState::None);
+            vs_mapper.set(&ValueState::None);
         }
     }
 
@@ -163,17 +164,14 @@ pub trait Dns: elrond_wasm_modules::features::FeaturesModule {
     // STORAGE
 
     #[view(getRegistrationCost)]
-    #[storage_get("registration_cost")]
-    fn get_registration_cost(&self) -> BigUint;
+    #[storage_mapper("registration_cost")]
+    fn registration_cost(&self) -> SingleValueMapper<BigUint>;
 
-    #[storage_set("registration_cost")]
-    fn set_registration_cost(&self, registration_cost: &BigUint);
-
-    #[storage_get("value_state")]
-    fn get_value_state(&self, name_hash: &NameHash<Self::Api>) -> ValueState<Self::Api>;
-
-    #[storage_set("value_state")]
-    fn set_value_state(&self, name_hash: &NameHash<Self::Api>, value_state: &ValueState<Self::Api>);
+    #[storage_mapper("value_state")]
+    fn value_state(
+        &self,
+        name_hash: &NameHash<Self::Api>,
+    ) -> SingleValueMapper<ValueState<Self::Api>>;
 
     // UTILS
 
