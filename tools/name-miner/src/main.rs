@@ -20,10 +20,10 @@ fn main() {
     assert!(desired_shard.len() == 1, "shard id should be 1 byte");
 
     for i in 0..5000 {
-        let name = format!("{}{:04}.elrond", prefix, i);
+        let name = format!("{prefix}{i:04}.elrond");
         let hash = keccak256(name.as_bytes());
         if hash[31] == desired_shard[0] {
-            println!("{}", name);
+            println!("{name}");
         }
     }
 }
