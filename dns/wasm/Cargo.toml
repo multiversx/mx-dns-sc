@@ -2,7 +2,7 @@
 name = "elrond-wasm-sc-dns-wasm"
 version = "0.0.0"
 authors = ["andrei-marinica <andrei_m_marinica@yahoo.com>"]
-edition = "2018"
+edition = "2021"
 
 [lib]
 crate-type = ["cdylib"]

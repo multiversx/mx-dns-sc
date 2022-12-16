@@ -22,14 +22,14 @@ fn test_validate_name() {
     assert!(validate_name("aa.elrond").is_err());
 
     // lowercase only
-    assert!(!validate_name("Aaaaaaaaaa.elrond").is_ok());
+    assert!(validate_name("Aaaaaaaaaa.elrond").is_err());
 
     // no other chars
-    assert!(validate_name("Aaaaa.aaaa.elrond").is_err());
-    assert!(validate_name("Aaaaa@aaaa.elrond").is_err());
-    assert!(validate_name("Aaaaa+aaaa.elrond").is_err());
-    assert!(validate_name("Aaaaa-aaaa.elrond").is_err());
-    assert!(validate_name("Aaaaa_aaaa.elrond").is_err());
+    assert!(validate_name("aaaaa.aaaa.elrond").is_err());
+    assert!(validate_name("aaaaa@aaaa.elrond").is_err());
+    assert!(validate_name("aaaaa+aaaa.elrond").is_err());
+    assert!(validate_name("aaaaa-aaaa.elrond").is_err());
+    assert!(validate_name("aaaaa_aaaa.elrond").is_err());
 
     // without suffix
     assert!(validate_name("aaaaaaaaaa").is_err());
