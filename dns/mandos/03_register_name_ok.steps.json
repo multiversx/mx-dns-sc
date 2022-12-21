@@ -19,13 +19,15 @@
                 "value": "0",
                 "function": "nameHash",
                 "arguments": [
-                    "str:coolname0001.elrond"
+                    "str:coolname0001.x"
                 ],
                 "gasLimit": "50,000,000",
                 "gasPrice": "0"
             },
             "expect": {
-                "out": [ "keccak256:str:coolname0001.elrond" ],
+                "out": [
+                    "keccak256:str:coolname0001.elrond"
+                ],
                 "status": "",
                 "logs": "*",
                 "gas": "*",
@@ -41,13 +43,15 @@
                 "value": "0",
                 "function": "nameShard",
                 "arguments": [
-                    "str:coolname0001.elrond"
+                    "str:coolname0001.x"
                 ],
                 "gasLimit": "50,000,000",
                 "gasPrice": "0"
             },
             "expect": {
-                "out": [ "0x87" ],
+                "out": [
+                    "0x87"
+                ],
                 "status": "",
                 "logs": "*",
                 "gas": "*",
@@ -63,7 +67,7 @@
                 "value": "123,000",
                 "function": "register",
                 "arguments": [
-                    "str:coolname0001.elrond"
+                    "str:coolname0001.x"
                 ],
                 "gasLimit": "40,000,000",
                 "gasPrice": "0"
@@ -85,13 +89,15 @@
                 "value": "0",
                 "function": "resolve",
                 "arguments": [
-                    "str:coolname0001.elrond"
+                    "str:coolname0001.x"
                 ],
                 "gasLimit": "50,000,000",
                 "gasPrice": "0"
             },
             "expect": {
-                "out": [ "address:cool_address" ],
+                "out": [
+                    "address:cool_address"
+                ],
                 "status": "",
                 "logs": [],
                 "gas": "*",
@@ -104,7 +110,7 @@
                 "address:cool_address": {
                     "nonce": "*",
                     "balance": "123,000",
-                    "username": "str:coolname0001.elrond"
+                    "username": "str:coolname0001.x"
                 },
                 "sc:dns#87": {
                     "nonce": "*",
@@ -112,7 +118,7 @@
                     "storage": {
                         "''registration_cost": "123,000",
                         "''feat:register": "1",
-                        "''value_state|keccak256:str:coolname0001.elrond": "u8:2|address:cool_address"
+                        "''value_state|keccak256:str:coolname0001.elrond": "u8:5|address:cool_address"
                     },
                     "code": "file:../output/elrond-wasm-sc-dns.wasm"
                 },
