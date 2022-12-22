@@ -1,0 +1,80 @@
+{
+    "name": "dns resolve elrond test",
+    "gasSchedule": "dummy",
+    "steps": [
+        {
+            "step": "externalSteps",
+            "path": "01_dns_init.steps.json"
+        },
+        {
+            "step": "externalSteps",
+            "path": "02_dns_init_check.steps.json"
+        },
+        {
+            "step": "setState",
+            "accounts": {
+                "address:cool_address": {
+                    "nonce": "0",
+                    "balance": "123,000",
+                    "username": "str:coolname0001.elrond"
+                },
+                "sc:dns#87": {
+                    "nonce": "0",
+                    "balance": "123,000",
+                    "storage": {
+                        "''registration_cost": "123,000",
+                        "''feat:register": "1",
+                        "''value_state|keccak256:str:coolname0001.elrond": "u8:2|address:cool_address"
+                    },
+                    "code": "file:../output/elrond-wasm-sc-dns.wasm"
+                }
+            }
+        },
+        {
+            "step": "scCall",
+            "txId": "resolve-coolname0001-elrond-err",
+            "tx": {
+                "from": "address:viewer",
+                "to": "sc:dns#87",
+                "value": "0",
+                "function": "resolve",
+                "arguments": [
+                    "str:coolname0001.elrond"
+                ],
+                "gasLimit": "50,000,000",
+                "gasPrice": "0"
+            },
+            "expect": {
+                "out": [
+                    "address:cool_address"
+                ],
+                "status": "",
+                "logs": [],
+                "gas": "*",
+                "refund": "*"
+            }
+        },
+        {
+            "step": "scCall",
+            "txId": "resolve-coolname0001-x-err",
+            "tx": {
+                "from": "address:viewer",
+                "to": "sc:dns#87",
+                "value": "0",
+                "function": "resolve",
+                "arguments": [
+                    "str:coolname0001.x"
+                ],
+                "gasLimit": "50,000,000",
+                "gasPrice": "0"
+            },
+            "expect": {
+                "out": [],
+                "status": "",
+                "logs": [],
+                "gas": "*",
+                "refund": "*"
+            }
+        }
+    ]
+}

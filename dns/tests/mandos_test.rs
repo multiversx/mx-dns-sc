@@ -15,3 +15,15 @@ fn world() -> BlockchainMock {
 fn test_mandos_main_rs() {
     elrond_wasm_debug::mandos_rs("mandos/main.scen.json", world());
 }
+
+#[test]
+fn test_mandos_resolve_elrond_rs() {
+    elrond_wasm_debug::mandos_rs("mandos/resolve-elrond.scen.json", world());
+}
+
+// TODO: enable test when the migrateUserName builtin function is implemented the rust framework
+#[test]
+#[ignore = "migrateUserName builtin function not implemented yet"]
+fn test_mandos_migrate_rs() {
+    elrond_wasm_debug::mandos_rs("mandos/migrate.scen.json", world());
+}
