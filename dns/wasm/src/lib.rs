@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                           15
+// Endpoints:                           18
 // Async Callback:                       1
-// Total number of exported functions:  17
+// Total number of exported functions:  20
 
 #![no_std]
 
@@ -16,12 +16,15 @@ elrond_wasm_node::wasm_endpoints! {
     (
         canRegister
         register
+        migrate
         resolve
         resolveFromHash
-        checkPending
-        resetPending
+        getNameValueState
         claim
+        setUpdateGasLimit
         getRegistrationCost
+        getValueState
+        getUpdateGasLimit
         getContractOwner
         getOwnShardId
         nameHash
