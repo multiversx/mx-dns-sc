@@ -5,7 +5,6 @@ use elrond_wasm::{
 
 elrond_wasm::derive_imports!();
 
-/// Copied from elrond-wasm serialization tests.
 #[derive(
     NestedEncode, NestedDecode, TopEncode, TopDecode, TypeAbi, PartialEq, Eq, Debug, Clone,
 )]
