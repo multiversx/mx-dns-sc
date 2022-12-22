@@ -165,8 +165,8 @@ pub trait Dns: elrond_wasm_modules::features::FeaturesModule {
         }
     }
 
-    #[view(getNameState)]
-    fn get_name_state(&self, name: &ManagedBuffer) -> ValueState<Self::Api> {
+    #[view(getNameValueState)]
+    fn get_name_value_state(&self, name: &ManagedBuffer) -> ValueState<Self::Api> {
         let name_hash = self.name_hash(name);
         self.value_state(&name_hash).get()
     }
