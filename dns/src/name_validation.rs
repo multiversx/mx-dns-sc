@@ -19,7 +19,7 @@ fn check_name_char(ch: u8) -> bool {
 pub fn validate_name<M: ManagedTypeApi>(name: &ManagedBuffer<M>) -> Result<(), &'static str> {
     let name_cache = NameCache::try_load(name)?;
 
-    let name_without_suffix = name_cache.check_suffix(X_SUFFIX)?;
+    let name_without_suffix = name_cache.check_suffix_and_get_name(X_SUFFIX)?;
     validate_name_without_suffix(name_without_suffix)
 }
 
@@ -53,7 +53,7 @@ fn try_replace_suffix<M: ManagedTypeApi>(
     new_suffix: &'static [u8],
 ) -> Result<ManagedBuffer<M>, &'static str> {
     let name_cache = NameCache::try_load(name)?;
-    let name_without_suffix = name_cache.check_suffix(original_suffix)?;
+    let name_without_suffix = name_cache.check_suffix_and_get_name(original_suffix)?;
     let new_name = build_name(name_without_suffix, new_suffix);
     Result::Ok(new_name)
 }
@@ -64,7 +64,7 @@ pub fn prepare_and_validate_name_for_migration<M: ManagedTypeApi>(
     name: &ManagedBuffer<M>,
 ) -> Result<ManagedBuffer<M>, &'static str> {
     let name_cache = NameCache::try_load(name)?;
-    let name_without_suffix = name_cache.check_suffix(ELROND_SUFFIX)?;
+    let name_without_suffix = name_cache.check_suffix_and_get_name(ELROND_SUFFIX)?;
     validate_name_without_suffix(name_without_suffix)?;
     let new_name = build_name(name_without_suffix, X_SUFFIX);
     Result::Ok(new_name)
@@ -108,7 +108,7 @@ impl NameCache {
         &mut self.name_bytes[..self.name_len]
     }
 
-    pub fn check_suffix(&self, suffix: &[u8]) -> Result<&[u8], &'static str> {
+    pub fn check_suffix_and_get_name(&self, suffix: &[u8]) -> Result<&[u8], &'static str> {
         if self.name_len < suffix.len() {
             return Result::Err("name does not contain suffix");
         }
