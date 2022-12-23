@@ -20,8 +20,7 @@ pub fn validate_name<M: ManagedTypeApi>(name: &ManagedBuffer<M>) -> Result<(), &
     let name_cache = NameCache::try_load(name)?;
 
     let name_without_suffix = name_cache.check_suffix(X_SUFFIX)?;
-    validate_name_without_suffix(name_without_suffix)?;
-    Result::Ok(())
+    validate_name_without_suffix(name_without_suffix)
 }
 
 fn validate_name_without_suffix(name_without_suffix: &[u8]) -> Result<(), &'static str> {
