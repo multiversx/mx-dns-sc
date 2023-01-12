@@ -4,6 +4,7 @@ pub mod name_validation;
 pub mod user_builtin;
 pub mod value_state;
 
+use name_validation::SuffixType;
 use value_state::ValueState;
 
 elrond_wasm::imports!();
@@ -39,7 +40,7 @@ pub trait Dns: elrond_wasm_modules::features::FeaturesModule {
 
     /// `name_hash` is redundant, but passed to the method so we don't compute it twice.
     fn validate_register_input(&self, name: &ManagedBuffer, name_hash: &NameHash<Self::Api>) {
-        self.check_feature_on(b"register", true);
+        self.check_register_feature_on();
 
         self.validate_name(name);
 
@@ -47,6 +48,10 @@ pub trait Dns: elrond_wasm_modules::features::FeaturesModule {
 
         let vs = self.value_state(name_hash).get();
         require!(vs.is_available(), "name already taken");
+    }
+
+    fn check_register_feature_on(&self) {
+        self.check_feature_on(b"register", true);
     }
 
     #[view(canRegister)]
@@ -69,85 +74,101 @@ pub trait Dns: elrond_wasm_modules::features::FeaturesModule {
 
         let address = self.blockchain().get_caller();
         self.value_state(&name_hash)
-            .set(&ValueState::Pending(address.clone()));
+            .set(&ValueState::PendingX(address.clone()));
 
+        let gas_limit = self.update_gas_limit().get();
         self.user_builtin_proxy(address)
             .set_user_name(&name)
+            .with_gas_limit(gas_limit)
             .async_call()
-            .with_callback(self.callbacks().set_user_name_callback(&name_hash))
+            .with_callback(self.callbacks().update_value_state_callback(&name_hash))
             .call_and_exit()
     }
 
+    #[endpoint]
+    fn migrate(&self, name: ManagedBuffer) {
+        let name_with_x_suffix = name_validation::prepare_and_validate_name_for_migration(&name)
+            .unwrap_or_else(|err| sc_panic!(err));
+
+        self.check_register_feature_on();
+
+        let name_hash = self.unchecked_name_hash(&name);
+
+        self.validate_name_shard(&name_hash);
+
+        let address = self.value_state(&name_hash).update(|vs| {
+            let address = vs.start_migration();
+
+            let caller = self.blockchain().get_caller();
+            require!(caller == address, "name not owned by the caller");
+            address
+        });
+
+        let gas_limit = self.update_gas_limit().get();
+        self.user_builtin_proxy(address)
+            .migrate_user_name(&name_with_x_suffix)
+            .with_gas_limit(gas_limit)
+            .async_call()
+            .with_callback(self.callbacks().update_value_state_callback(&name_hash))
+            .call_and_exit();
+    }
+
     #[callback]
-    fn set_user_name_callback(
+    fn update_value_state_callback(
         &self,
         cb_name_hash: &NameHash<Self::Api>,
         #[call_result] result: ManagedAsyncCallResult<()>,
     ) {
-        match result {
-            ManagedAsyncCallResult::Ok(()) => {
-                // commit
-                self.value_state(cb_name_hash).update(|vs| {
-                    *vs = if let ValueState::Pending(addr) = vs {
-                        ValueState::Committed(addr.clone())
-                    } else {
-                        ValueState::None
-                    }
-                });
+        self.value_state(cb_name_hash).update(|vs| {
+            if result.is_ok() {
+                vs.finalize();
+            } else {
+                vs.revert();
             }
-            ManagedAsyncCallResult::Err(_) => {
-                // revert
-                self.value_state(cb_name_hash).set(&ValueState::None);
-            }
-        }
+        });
     }
 
     #[view]
     fn resolve(&self, name: &ManagedBuffer) -> OptionalValue<ManagedAddress> {
-        let name_hash = self.name_hash(name);
+        let (name_hash, computed_suffix_type) = self.compute_name_hash_and_classify(name);
         self.resolve_from_hash(name_hash)
+            .into_option()
+            .and_then(|address_suffix_multi_value| {
+                let (address, stored_suffix_type) = address_suffix_multi_value.into_tuple();
+                if computed_suffix_type == stored_suffix_type {
+                    Some(address)
+                } else {
+                    None
+                }
+            })
+            .into()
     }
 
     #[view(resolveFromHash)]
-    fn resolve_from_hash(&self, name_hash: NameHash<Self::Api>) -> OptionalValue<ManagedAddress> {
+    fn resolve_from_hash(
+        &self,
+        name_hash: NameHash<Self::Api>,
+    ) -> OptionalValue<MultiValue2<ManagedAddress, SuffixType>> {
         if sibling_id(&name_hash.to_byte_array()) != self.get_own_sibling_id() {
             return OptionalValue::None;
         }
 
         let vs = self.value_state(&name_hash).get();
-        if let ValueState::Committed(address) = vs {
-            OptionalValue::Some(address)
-        } else {
-            OptionalValue::None
+        match vs {
+            ValueState::RegisteredX(address) => {
+                OptionalValue::Some((address, SuffixType::X).into())
+            }
+            ValueState::RegisteredElrond(address) => {
+                OptionalValue::Some((address, SuffixType::Elrond).into())
+            }
+            _ => OptionalValue::None,
         }
     }
 
-    #[view(checkPending)]
-    fn check_pending(&self, name: &ManagedBuffer) -> OptionalValue<ManagedAddress> {
+    #[view(getNameValueState)]
+    fn get_name_value_state(&self, name: &ManagedBuffer) -> ValueState<Self::Api> {
         let name_hash = self.name_hash(name);
-        if sibling_id(&name_hash.to_byte_array()) != self.get_own_sibling_id() {
-            return OptionalValue::None;
-        }
-
-        let vs = self.value_state(&name_hash).get();
-        if let ValueState::Pending(address) = vs {
-            OptionalValue::Some(address)
-        } else {
-            OptionalValue::None
-        }
-    }
-
-    #[only_owner]
-    #[view(resetPending)]
-    fn reset_pending(&self, name: &ManagedBuffer) {
-        let name_hash = self.name_hash(name);
-        self.validate_name_shard(&name_hash);
-
-        let vs_mapper = self.value_state(&name_hash);
-        let vs = vs_mapper.get();
-        if let ValueState::Pending(_) = vs {
-            vs_mapper.set(&ValueState::None);
-        }
+        self.value_state(&name_hash).get()
     }
 
     #[only_owner]
@@ -161,17 +182,28 @@ pub trait Dns: elrond_wasm_modules::features::FeaturesModule {
         );
     }
 
+    #[only_owner]
+    #[endpoint(setUpdateGasLimit)]
+    fn set_update_gas_limit(&self, gas_limit: u64) {
+        self.update_gas_limit().set(gas_limit);
+    }
+
     // STORAGE
 
     #[view(getRegistrationCost)]
     #[storage_mapper("registration_cost")]
     fn registration_cost(&self) -> SingleValueMapper<BigUint>;
 
+    #[view(getValueState)]
     #[storage_mapper("value_state")]
     fn value_state(
         &self,
         name_hash: &NameHash<Self::Api>,
     ) -> SingleValueMapper<ValueState<Self::Api>>;
+
+    #[view(getUpdateGasLimit)]
+    #[storage_mapper("update_gas_limit")]
+    fn update_gas_limit(&self) -> SingleValueMapper<u64>;
 
     // UTILS
 
@@ -188,6 +220,21 @@ pub trait Dns: elrond_wasm_modules::features::FeaturesModule {
 
     #[view(nameHash)]
     fn name_hash(&self, name: &ManagedBuffer) -> NameHash<Self::Api> {
+        let (name_hash, _) = self.compute_name_hash_and_classify(name);
+        name_hash
+    }
+
+    fn compute_name_hash_and_classify(
+        &self,
+        name: &ManagedBuffer,
+    ) -> (NameHash<Self::Api>, SuffixType) {
+        let (prepared_name, suffix_type) =
+            name_validation::prepare_name_for_hash_and_classify(name);
+        let name_hash = self.unchecked_name_hash(&prepared_name);
+        (name_hash, suffix_type)
+    }
+
+    fn unchecked_name_hash(&self, name: &ManagedBuffer) -> NameHash<Self::Api> {
         self.crypto().keccak256(name)
     }
 

@@ -6,38 +6,70 @@ fn validate_name(name_str: &str) -> Result<(), &'static str> {
     elrond_wasm_sc_dns::name_validation::validate_name(&mb)
 }
 
+fn check(name: &str, expected: &Result<(), &'static str>) {
+    assert_eq!(validate_name(name), *expected);
+}
+
 #[test]
 fn test_validate_name() {
     let _ = DebugApi::dummy();
 
-    // ok
-    assert!(validate_name("aaaaaaaaaa.elrond").is_ok());
-    assert!(validate_name("zzzzzzzzzz.elrond").is_ok());
-    assert!(validate_name("0000000000.elrond").is_ok());
-    assert!(validate_name("9999999999.elrond").is_ok());
-    assert!(validate_name("coolname0001.elrond").is_ok());
+    let ok = &Ok(());
+    let wrong_suffix = &Err("wrong suffix");
+    let name_is_too_short = &Err("name is too short");
+    let character_not_allowed = &Err("character not allowed");
+    let name_too_long = &Err("name too long");
+
+    // .x
+    check("aaa.x", ok);
+    check("aaaaaaaaaa.x", ok);
+    check("zzzzzzzzzz.x", ok);
+    check("0000000000.x", ok);
+    check("9999999999.x", ok);
+    check("coolname0001.x", ok);
+
+    // .elrond
+    check("aaa.elrond", wrong_suffix);
+    check("aaaaaaaaaa.elrond", wrong_suffix);
+    check("zzzzzzzzzz.elrond", wrong_suffix);
+    check("0000000000.elrond", wrong_suffix);
+    check("9999999999.elrond", wrong_suffix);
+    check("coolname0001.elrond", wrong_suffix);
 
     // too short
-    assert!(validate_name(".elrond").is_err());
-    assert!(validate_name("aa.elrond").is_err());
+    check(".x", name_is_too_short);
+    check("aa.x", name_is_too_short);
+    check(".elrond", wrong_suffix);
+    check("aa.elrond", wrong_suffix);
 
     // lowercase only
-    assert!(validate_name("Aaaaaaaaaa.elrond").is_err());
+    check("Aaaaaaaaaa.x", character_not_allowed);
+    check("Aaaaaaaaaa.elrond", wrong_suffix);
 
     // no other chars
-    assert!(validate_name("aaaaa.aaaa.elrond").is_err());
-    assert!(validate_name("aaaaa@aaaa.elrond").is_err());
-    assert!(validate_name("aaaaa+aaaa.elrond").is_err());
-    assert!(validate_name("aaaaa-aaaa.elrond").is_err());
-    assert!(validate_name("aaaaa_aaaa.elrond").is_err());
+    check("aaaaa.aaaa.x", character_not_allowed);
+    check("aaaaa@aaaa.x", character_not_allowed);
+    check("aaaaa+aaaa.x", character_not_allowed);
+    check("aaaaa-aaaa.x", character_not_allowed);
+    check("aaaaa_aaaa.x", character_not_allowed);
+    check("aaaaa.aaaa.elrond", wrong_suffix);
+    check("aaaaa@aaaa.elrond", wrong_suffix);
+    check("aaaaa+aaaa.elrond", wrong_suffix);
+    check("aaaaa-aaaa.elrond", wrong_suffix);
+    check("aaaaa_aaaa.elrond", wrong_suffix);
 
     // without suffix
-    assert!(validate_name("aaaaaaaaaa").is_err());
-    assert!(validate_name("zzzzzzzzzz").is_err());
-    assert!(validate_name("0000000000").is_err());
-    assert!(validate_name("9999999999").is_err());
-    assert!(validate_name("coolname0001").is_err());
+    check("aaaaaaaaaa", wrong_suffix);
+    check("zzzzzzzzzz", wrong_suffix);
+    check("0000000000", wrong_suffix);
+    check("9999999999", wrong_suffix);
+    check("coolname0001", wrong_suffix);
 
     // name too long
-    assert!(validate_name("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.elrond").is_err());
+    check("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.x", ok); // 32 bytes
+    check("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.x", name_too_long); // 33 bytes
+    check("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.x", name_too_long); // 37 bytes
+    check("aaaaaaaaaaaaaaaaaaaaaaaaa.elrond", wrong_suffix); // 32 bytes
+    check("aaaaaaaaaaaaaaaaaaaaaaaaaa.elrond", name_too_long); // 33 bytes
+    check("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.elrond", name_too_long); // 37 bytes
 }
