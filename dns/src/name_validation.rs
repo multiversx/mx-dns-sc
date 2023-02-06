@@ -1,5 +1,5 @@
-elrond_wasm::imports!();
-elrond_wasm::derive_imports!();
+multiversx_sc::imports!();
+multiversx_sc::derive_imports!();
 
 const MIN_LENGTH: usize = 3;
 pub const MAX_LENGTH: usize = 32;

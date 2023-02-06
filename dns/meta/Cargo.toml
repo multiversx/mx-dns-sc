@@ -1,15 +1,11 @@
 [package]
-name = "elrond-wasm-sc-dns-abi"
+name = "multiversx-sc-sc-dns-abi"
 version = "0.0.0"
 authors = ["Andrei Marinica <andrei.marinica@elrond.com>"]
 edition = "2021"
 publish = false
-
-[dependencies.elrond-wasm-sc-dns]
+[dependencies.multiversx-sc-sc-dns]
 path = ".."
 
-[dependencies.elrond-wasm]
-version = "0.37.0"
-
-[dependencies.elrond-wasm-debug]
-version = "0.37.0"
+[dependencies.multiversx-sc-meta]
+version = "0.39.5"

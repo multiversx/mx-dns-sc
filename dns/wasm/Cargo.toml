@@ -1,29 +1,22 @@
 [package]
-name = "elrond-wasm-sc-dns-wasm"
+name = "multiversx-sc-sc-dns-wasm"
 version = "0.0.0"
 authors = ["andrei-marinica <andrei_m_marinica@yahoo.com>"]
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib"]
-
 [profile.release]
 codegen-units = 1
 opt-level = "z"
 lto = true
 debug = false
 panic = "abort"
-
-[dependencies.elrond-wasm-sc-dns]
+[dependencies.multiversx-sc-sc-dns]
 path = ".."
 
-[dependencies.elrond-wasm-node]
-version = "0.37.0"
+[dependencies.multiversx-sc-wasm-adapter]
+version = "0.39.5"
 
-[dependencies.elrond-wasm-output]
-version = "0.37.0"
-features = ["wasm-output-mode"]
-
-# Prevent this from interfering with workspaces
 [workspace]
 members = ["."]

@@ -7,7 +7,7 @@ pub mod value_state;
 use name_validation::SuffixType;
 use value_state::ValueState;
 
-elrond_wasm::imports!();
+multiversx_sc::imports!();
 
 type NameHash<M> = ManagedByteArray<M, 32>;
 
@@ -21,8 +21,8 @@ fn sibling_id(addr_bytes: &[u8; 32]) -> u8 {
     addr_bytes[31]
 }
 
-#[elrond_wasm::contract]
-pub trait Dns: elrond_wasm_modules::features::FeaturesModule {
+#[multiversx_sc::contract]
+pub trait Dns: multiversx_sc_modules::features::FeaturesModule {
     #[proxy]
     fn user_builtin_proxy(&self, to: ManagedAddress) -> user_builtin::Proxy<Self::Api>;
 
