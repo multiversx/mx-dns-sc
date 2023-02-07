@@ -4,7 +4,7 @@ fn world() -> ScenarioWorld {
     let mut blockchain = ScenarioWorld::new();
     blockchain.set_current_dir_from_workspace("dns");
 
-    blockchain.register_contract("file:output/elrond-wasm-sc-dns.wasm", dns::ContractBuilder);
+    blockchain.register_contract("file:output/dns.wasm", dns::ContractBuilder);
     blockchain
 }
 
