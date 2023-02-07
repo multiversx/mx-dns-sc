@@ -3,7 +3,7 @@ use multiversx_sc_scenario::DebugApi;
 
 fn validate_name(name_str: &str) -> Result<(), &'static str> {
     let mb = ManagedBuffer::<DebugApi>::from(name_str.as_bytes());
-    multiversx_sc_sc_dns::name_validation::validate_name(&mb)
+    dns::name_validation::validate_name(&mb)
 }
 
 fn check(name: &str, expected: &Result<(), &'static str>) {

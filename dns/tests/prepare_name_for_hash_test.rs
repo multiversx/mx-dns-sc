@@ -1,10 +1,10 @@
+use dns::name_validation::SuffixType;
 use multiversx_sc::types::ManagedBuffer;
 use multiversx_sc_scenario::DebugApi;
-use multiversx_sc_sc_dns::name_validation::SuffixType;
 
 fn prepare_name_for_hash_and_classify(name_str: &str) -> (ManagedBuffer<DebugApi>, SuffixType) {
     let mb = ManagedBuffer::<DebugApi>::from(name_str.as_bytes());
-    multiversx_sc_sc_dns::name_validation::prepare_name_for_hash_and_classify(&mb)
+    dns::name_validation::prepare_name_for_hash_and_classify(&mb)
 }
 
 fn check(name: &str, expected: &str, suffix_type: SuffixType) {
