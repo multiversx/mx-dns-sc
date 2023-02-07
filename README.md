@@ -1,5 +1,5 @@
 # sc-dns-rs
-Elrond DNS smart contract, written in Rust
+MultiversX DNS smart contract, written in Rust
 
 
 
@@ -42,15 +42,13 @@ To check wasm size:
 twiggy top -n 20 target/wasm32-unknown-unknown/release/wasm.wasm
 ```
 
-To work with unpublished elrond-wasm crates, clone https://github.com/ElrondNetwork/elrond-wasm-rs in the same parent directory and replace dependencies in Cargo.toml with:
+To work with unpublished mx-sdk-rs crates, clone https://github.com/multiversx/mx-sdk-rs in the same parent directory and replace dependencies in Cargo.toml with:
 ```
-elrond-wasm = { path = "../../elrond-wasm-rs/elrond-wasm" }
-elrond-wasm-node = { path = "../../elrond-wasm-rs/elrond-wasm-node" }
-elrond-wasm-derive = { path = "../../elrond-wasm-rs/elrond-wasm-derive" }
+multiversx-sc = { path = "../mx-sdk-rs/framework/base" }
+multiversx-sc-wasm-adapter = { path = "../mx-sdk-rs/framework/wasm-adapter" }
 ```
 
 And the same for debug:
 ```
-elrond-wasm = { path = "../../../elrond-wasm-rs/elrond-wasm" }
-elrond-wasm-debug = { path = "../../../elrond-wasm-rs/elrond-wasm-debug" }
+multiversx-sc-scenario = { path = "../mx-sdk-rs/framework/scenario" }
 ```
