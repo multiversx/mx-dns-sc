@@ -1,5 +1,5 @@
 [package]
-name = "multiversx-sc-sc-dns-wasm"
+name = "dns-wasm"
 version = "0.0.0"
 authors = ["andrei-marinica <andrei_m_marinica@yahoo.com>"]
 edition = "2021"
@@ -12,7 +12,7 @@ opt-level = "z"
 lto = true
 debug = false
 panic = "abort"
-[dependencies.multiversx-sc-sc-dns]
+[dependencies.dns]
 path = ".."
 
 [dependencies.multiversx-sc-wasm-adapter]
