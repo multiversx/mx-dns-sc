@@ -4,7 +4,7 @@ version = "0.0.0"
 authors = ["Andrei Marinica <andrei.marinica@multiversx.com>"]
 edition = "2021"
 publish = false
-[dependencies.multiversx-sc-sc-dns]
+[dependencies.dns]
 path = ".."
 
 [dependencies.multiversx-sc-meta]
