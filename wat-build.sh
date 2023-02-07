@@ -4,7 +4,7 @@
 
 CONTRACT_PATH="dns"
 
-CONTRACT_NAME="elrond-wasm-sc-dns"
+CONTRACT_NAME="dns"
 
 rm -f ${CONTRACT_PATH}/output/${CONTRACT_NAME}.wasm
 rm -f ${CONTRACT_PATH}/output/${CONTRACT_NAME}-dbg.wasm
