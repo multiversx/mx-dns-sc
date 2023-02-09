@@ -1,0 +1,6 @@
+[settings]
+main = "main"
+
+[contracts.main]
+name = "dns"
+add-unlabelled = true
