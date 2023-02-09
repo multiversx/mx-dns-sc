@@ -1,8 +1,9 @@
+use common::name_cache::NameCache;
+
 multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
 const MIN_LENGTH: usize = 3;
-pub const MAX_LENGTH: usize = 32;
 const ELROND_SUFFIX: &[u8] = b".elrond";
 const X_SUFFIX: &[u8] = b".x";
 
@@ -19,7 +20,7 @@ fn check_name_char(ch: u8) -> bool {
 pub fn validate_name<M: ManagedTypeApi>(name: &ManagedBuffer<M>) -> Result<(), &'static str> {
     let name_cache = NameCache::try_load(name)?;
 
-    let name_without_suffix = name_cache.check_suffix_and_get_name(X_SUFFIX)?;
+    let name_without_suffix = check_suffix_and_get_name(&name_cache, X_SUFFIX)?;
     validate_name_without_suffix(name_without_suffix)
 }
 
@@ -53,7 +54,7 @@ fn try_replace_suffix<M: ManagedTypeApi>(
     new_suffix: &'static [u8],
 ) -> Result<ManagedBuffer<M>, &'static str> {
     let name_cache = NameCache::try_load(name)?;
-    let name_without_suffix = name_cache.check_suffix_and_get_name(original_suffix)?;
+    let name_without_suffix = check_suffix_and_get_name(&name_cache, original_suffix)?;
     let new_name = build_name(name_without_suffix, new_suffix);
     Result::Ok(new_name)
 }
@@ -64,7 +65,7 @@ pub fn prepare_and_validate_name_for_migration<M: ManagedTypeApi>(
     name: &ManagedBuffer<M>,
 ) -> Result<ManagedBuffer<M>, &'static str> {
     let name_cache = NameCache::try_load(name)?;
-    let name_without_suffix = name_cache.check_suffix_and_get_name(ELROND_SUFFIX)?;
+    let name_without_suffix = check_suffix_and_get_name(&name_cache, ELROND_SUFFIX)?;
     validate_name_without_suffix(name_without_suffix)?;
     let new_name = build_name(name_without_suffix, X_SUFFIX);
     Result::Ok(new_name)
@@ -76,50 +77,21 @@ fn build_name<M: ManagedTypeApi>(name_without_suffix: &[u8], suffix: &[u8]) -> M
     name
 }
 
-struct NameCache {
-    name_bytes: [u8; MAX_LENGTH],
-    name_len: usize,
-}
-
-impl NameCache {
-    pub fn try_load<M: ManagedTypeApi>(name: &ManagedBuffer<M>) -> Result<Self, &'static str> {
-        let name_len = name.len();
-        if name_len > MAX_LENGTH {
-            return Result::Err("name too long");
-        }
-
-        let mut name_cache = Self {
-            name_bytes: [0u8; MAX_LENGTH],
-            name_len,
-        };
-
-        let name_slice = name_cache.as_mut_slice();
-        if name.load_slice(0, name_slice).is_err() {
-            return Result::Err("error loading name bytes");
-        }
-        Result::Ok(name_cache)
+pub fn check_suffix_and_get_name<'a>(
+    name_cache: &'a NameCache,
+    suffix: &[u8],
+) -> Result<&'a [u8], &'static str> {
+    if name_cache.len() < suffix.len() {
+        return Result::Err("name does not contain suffix");
     }
 
-    pub fn as_slice(&self) -> &[u8] {
-        &self.name_bytes[..self.name_len]
+    let (name_without_suffix, name_suffix) = name_cache
+        .as_slice()
+        .split_at(name_cache.len() - suffix.len());
+
+    if name_suffix != suffix {
+        return Result::Err("wrong suffix");
     }
 
-    pub fn as_mut_slice(&mut self) -> &mut [u8] {
-        &mut self.name_bytes[..self.name_len]
-    }
-
-    pub fn check_suffix_and_get_name(&self, suffix: &[u8]) -> Result<&[u8], &'static str> {
-        if self.name_len < suffix.len() {
-            return Result::Err("name does not contain suffix");
-        }
-
-        let (name_without_suffix, name_suffix) =
-            self.as_slice().split_at(self.name_len - suffix.len());
-
-        if name_suffix != suffix {
-            return Result::Err("wrong suffix");
-        }
-
-        Result::Ok(name_without_suffix)
-    }
+    Result::Ok(name_without_suffix)
 }

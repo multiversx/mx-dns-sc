@@ -1,15 +1,14 @@
 #![no_std]
 
 pub mod name_validation;
-pub mod user_builtin;
 pub mod value_state;
 
+use common::name_hash::NameHash;
+use common::user_builtin;
 use name_validation::SuffixType;
 use value_state::ValueState;
 
 multiversx_sc::imports!();
-
-type NameHash<M> = ManagedByteArray<M, 32>;
 
 /// There are 256 DNS contracts deployed, each one processes some of the addresses.
 ///
