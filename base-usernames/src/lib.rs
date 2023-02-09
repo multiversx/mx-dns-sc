@@ -20,16 +20,16 @@ pub trait BaseUsernames: only_admin::OnlyAdminModule + pause::PauseModule {
         self.delete_gas_limit().set(delete_gas_limit);
     }
 
+    #[only_admin]
     #[endpoint(setDomainManager)]
     fn set_domain_manager(&self, domain: ManagedBuffer, manager: ManagedAddress) {
-        self.require_caller_is_admin();
         let hash = self.hash(&domain);
         self.domain_manager(hash).set(manager);
     }
 
+    #[only_admin]
     #[endpoint(unSetDomainManager)]
     fn unset_domain_manager(&self, domain: ManagedBuffer) {
-        self.require_caller_is_admin();
         let hash = self.hash(&domain);
         self.domain_manager(hash).clear();
     }
