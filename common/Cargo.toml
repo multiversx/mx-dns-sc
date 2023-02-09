@@ -1,0 +1,12 @@
+[package]
+name = "common"
+version = "0.0.0"
+authors = [ "Claudiu-Marcel Bruda <claudiu.bruda@multiversx.com>", "MultiversX <contact@multiversx.com>" ]
+edition = "2018"
+publish = false
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies.multiversx-sc]
+version = "0.39.4"

@@ -11,10 +11,15 @@ documentation = "https://docs.multiversx.com/"
 description = "MultiversX Domain Name Service smart contract"
 keywords = ["multiversx", "wasm", "webassembly", "blockchain", "contract"]
 categories = ["no-std", "wasm", "cryptography::cryptocurrencies", "development-tools"]
+
 [dependencies.multiversx-sc-modules]
 version = "0.39.5"
 
 [dependencies.multiversx-sc]
 version = "0.39.5"
+
+[dependencies.common]
+path = "../common"
+
 [dev-dependencies.multiversx-sc-scenario]
 version = "0.39.5"

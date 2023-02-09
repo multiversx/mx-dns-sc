@@ -1,0 +1,22 @@
+[package]
+name = "domain-auction"
+version = "0.0.0"
+authors = [ "Claudiu-Marcel Bruda <claudiu.bruda@multiversx.com>", "MultiversX <contact@multiversx.com>" ]
+edition = "2018"
+publish = false
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies.multiversx-sc]
+version = "0.39.4"
+
+[dependencies.esdt-nft-marketplace]
+git = "https://github.com/multiversx/mx-nft-marketplace-sc"
+rev = "a75a79f"
+
+[dependencies.base-usernames]
+path = "../base-usernames"
+
+[dev-dependencies.multiversx-sc-scenario]
+version = "0.39.4"

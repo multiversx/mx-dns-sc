@@ -2,5 +2,9 @@
 members = [
   "dns",
   "dns/meta",
+  "base-usernames",
+  "base-usernames/meta",
+  "domain-auction",
+  "domain-auction/meta",
   "tools/name-miner",
 ]
