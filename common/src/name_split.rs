@@ -29,3 +29,11 @@ pub fn get_domain<M: ManagedTypeApi + ErrorApi>(username: &ManagedBuffer<M>) -> 
     let (_, domain) = get_prefix_domain(username);
     domain
 }
+
+pub fn concat<M: ManagedTypeApi + ErrorApi>(
+    mut prefix: ManagedBuffer<M>,
+    suffix: &[u8],
+) -> ManagedBuffer<M> {
+    prefix.append_bytes(suffix);
+    prefix
+}
