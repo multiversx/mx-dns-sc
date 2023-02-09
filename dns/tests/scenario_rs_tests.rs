@@ -10,16 +10,16 @@ fn world() -> ScenarioWorld {
 
 #[test]
 fn test_mandos_main_rs() {
-    multiversx_sc_scenario::run_rs("mandos/main.scen.json", world());
+    multiversx_sc_scenario::run_rs("scenarios/main.scen.json", world());
 }
 
 #[test]
 fn test_mandos_resolve_elrond_rs() {
-    multiversx_sc_scenario::run_rs("mandos/resolve-elrond.scen.json", world());
+    multiversx_sc_scenario::run_rs("scenarios/resolve-elrond.scen.json", world());
 }
 
 #[test]
 #[ignore = "migrateUserName builtin function not implemented yet"]
 fn test_mandos_migrate_rs() {
-    multiversx_sc_scenario::run_rs("mandos/migrate.scen.json", world());
+    multiversx_sc_scenario::run_rs("scenarios/migrate.scen.json", world());
 }
