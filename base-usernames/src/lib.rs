@@ -59,24 +59,36 @@ pub trait BaseUsernames: only_admin::OnlyAdminModule + pause::PauseModule {
     #[endpoint]
     fn accept(&self, username: ManagedBuffer) {
         let hash = self.hash(&username);
-        let user = self.username_status(hash).update(|status| {
+        self.username_status(hash).update(|status| {
             let user = if let UsernameStatus::PendingAccept { user } = status {
-                user.clone()
+                user
             } else {
                 sc_panic!("Wrong status");
             };
 
             let caller = self.blockchain().get_caller();
-            require!(caller == user, "Caller is not the pending user");
+            require!(caller == *user, "Caller is not the pending user");
             *status = UsernameStatus::Registered { user: caller };
-
-            user
         });
+    }
+
+    #[endpoint]
+    fn write(&self, username: ManagedBuffer) {
+        let domain = name_split::get_domain(&username);
+        self.require_caller_is_domain_manager(domain);
+
+        let hash = self.hash(&username);
+        let status = self.username_status(hash).get();
+        let user = if let UsernameStatus::Registered { user } = status {
+            user
+        } else {
+            sc_panic!("Not registered");
+        };
 
         let save_gas_limit = self.save_gas_limit().get();
 
         self.user_builtin_proxy(user)
-            .delete_user_name(username)
+            .save_user_name(username)
             .with_gas_limit(save_gas_limit)
             .async_call()
             .call_and_exit();
@@ -97,6 +109,12 @@ pub trait BaseUsernames: only_admin::OnlyAdminModule + pause::PauseModule {
                 .async_call()
                 .call_and_exit();
         }
+    }
+
+    #[endpoint(isAvailable)]
+    fn is_available(&self, username: ManagedBuffer) -> bool {
+        let hash = self.hash(&username);
+        self.username_status(hash).get() == UsernameStatus::Available
     }
 
     #[endpoint]

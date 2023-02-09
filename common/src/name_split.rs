@@ -4,7 +4,7 @@ multiversx_sc::imports!();
 
 static ERR_INVALID_USERNAME_FORMAT: &[u8] = b"Invalid username format, expected name.domain";
 
-fn get_prefix_domain<M: ManagedTypeApi + ErrorApi>(
+pub fn get_prefix_domain<M: ManagedTypeApi + ErrorApi>(
     username: &ManagedBuffer<M>,
 ) -> (ManagedBuffer<M>, ManagedBuffer<M>) {
     let cache = NameCache::try_load(username)
