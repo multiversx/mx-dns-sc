@@ -1,9 +1,9 @@
-use elrond_wasm::{
+use multiversx_sc::{
     api::{ErrorApiImpl, ManagedTypeApi},
     types::ManagedAddress,
 };
 
-elrond_wasm::derive_imports!();
+multiversx_sc::derive_imports!();
 
 #[derive(
     NestedEncode, NestedDecode, TopEncode, TopDecode, TypeAbi, PartialEq, Eq, Debug, Clone,

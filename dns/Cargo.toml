@@ -1,23 +1,20 @@
 [package]
-name = "elrond-wasm-sc-dns"
+name = "dns"
 version = "1.1.0"
 edition = "2021"
-
-authors = ["Andrei Marinica <andrei.marinica@elrond.com>", "Elrond Network <contact@elrond.com>"]
+authors = ["Andrei Marinica <andrei.marinica@multiversx.com>", "MultiversX <contact@multiversx.com>"]
 license = "GPL-3.0-only"
 readme = "README.md"
-repository = "https://github.com/ElrondNetwork/sc-dns-rs"
-homepage = "https://elrond.com/"
-documentation = "https://docs.elrond.com/"
-description = "Elrond Domain Name Service smart contract"
-keywords = ["elrond", "wasm", "webassembly", "blockchain", "contract"]
+repository = "https://github.com/multiversx/mx-dns-sc"
+homepage = "https://multiversx.com/"
+documentation = "https://docs.multiversx.com/"
+description = "MultiversX Domain Name Service smart contract"
+keywords = ["multiversx", "wasm", "webassembly", "blockchain", "contract"]
 categories = ["no-std", "wasm", "cryptography::cryptocurrencies", "development-tools"]
+[dependencies.multiversx-sc-modules]
+version = "0.39.5"
 
-[dependencies.elrond-wasm-modules]
-version = "0.37.0"
-
-[dependencies.elrond-wasm]
-version = "0.37.0"
-
-[dev-dependencies.elrond-wasm-debug]
-version = "0.37.0"
+[dependencies.multiversx-sc]
+version = "0.39.5"
+[dev-dependencies.multiversx-sc-scenario]
+version = "0.39.5"

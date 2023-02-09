@@ -1,5 +1,5 @@
-#include "elrond/context.h"
-#include "elrond/util.h"
+#include "multiversx/context.h"
+#include "multiversx/util.h"
 
 #define NULL 0
 #define MIN_NAME_LENGTH 10
@@ -19,7 +19,7 @@ typedef enum
 } ValueState;
 
 typedef struct
-{  
+{
     ValueState state;
     ADDRESS address;
 } Value;
@@ -37,13 +37,13 @@ void _loadCallbackArg(HASH nameHash);
 void _storeCallbackArg(const HASH nameHash);
 void _clearCallbackArg();
 void _resolveFromHash(const HASH nameHash, ADDRESS result);
-void _constructKey(const byte *prefix, int prefixLen,  const byte *arg, int argLen, byte *key);
-int _constructAsyncCallData(const byte *funcName, int funcLen, 
-    const byte *arg, int argLen, byte *data);
+void _constructKey(const byte *prefix, int prefixLen, const byte *arg, int argLen, byte *key);
+int _constructAsyncCallData(const byte *funcName, int funcLen,
+                            const byte *arg, int argLen, byte *data);
 byte _halfByteToHexDigit(byte num);
 void _hexEncode(const byte *data, int dataLen, byte *result);
 
-const ADDRESS ZERO_32_BYTE_ARRAY = { 0 };
+const ADDRESS ZERO_32_BYTE_ARRAY = {0};
 
 GENERAL_MSG(SET_USER_NAME_FUNCTION, "SetUserName");
 GENERAL_MSG(CLAIM_MSG, "dns claim");
@@ -58,23 +58,23 @@ ERROR_MSG(ERR_CLAIM, "only owner can claim");
 // full keys
 STORAGE_KEY(REGISTRATION_COST);
 
-//partial keys
+// partial keys
 STORAGE_KEY(VALUE_STATE); // + HASH nameHash -> ValueState
-STORAGE_KEY(CALLBACK); // + HASH originalTxHash -> HASH nameHash
+STORAGE_KEY(CALLBACK);    // + HASH originalTxHash -> HASH nameHash
 
 // endpoints
 
 // Args:
 // bigInt registration cost
-void init() 
+void init()
 {
     CHECK_NUM_ARGS(1);
     CHECK_NOT_PAYABLE();
 
     bigInt registrationCost = bigIntNew(0);
     bigIntGetUnsignedArgument(0, registrationCost);
-    bigIntStorageStoreUnsigned(REGISTRATION_COST_KEY, REGISTRATION_COST_KEY_LEN, 
-        registrationCost);
+    bigIntStorageStoreUnsigned(REGISTRATION_COST_KEY, REGISTRATION_COST_KEY_LEN,
+                               registrationCost);
 }
 
 // PAYABLE
@@ -95,13 +95,13 @@ void registerNameEndpoint()
     Value value = {};
     ADDRESS callerAddress = {};
 
-    byte dataAsync[200] = { };
+    byte dataAsync[200] = {};
     int dataLen;
-    
+
     getCallValue(paymentAsBytes);
     bigIntSetUnsignedBytes(payment, paymentAsBytes, sizeof(PAYMENT));
-    bigIntStorageLoadUnsigned(REGISTRATION_COST_KEY, REGISTRATION_COST_KEY_LEN, 
-        registrationCost);
+    bigIntStorageLoadUnsigned(REGISTRATION_COST_KEY, REGISTRATION_COST_KEY_LEN,
+                              registrationCost);
 
     if (bigIntCmp(payment, registrationCost) != 0)
     {
@@ -129,8 +129,8 @@ void registerNameEndpoint()
 
     _storeCallbackArg(nameHash);
 
-    dataLen = _constructAsyncCallData(SET_USER_NAME_FUNCTION, SET_USER_NAME_FUNCTION_LEN, 
-        name, nameLen, dataAsync);
+    dataLen = _constructAsyncCallData(SET_USER_NAME_FUNCTION, SET_USER_NAME_FUNCTION_LEN,
+                                      name, nameLen, dataAsync);
 
     asyncCall(callerAddress, ZERO_32_BYTE_ARRAY, dataAsync, dataLen);
 }
@@ -190,7 +190,7 @@ void nameHashView()
     int len;
     byte name[100] = {};
     HASH hash = {};
-    
+
     len = getArgument(0, name);
     _hashName(name, len, hash);
 
@@ -212,7 +212,7 @@ void nameShardView()
     len = getArgument(0, name);
     _hashName(name, len, hash);
     shardId = _shardId(hash);
-    
+
     finish(&shardId, sizeof(byte));
 }
 
@@ -225,7 +225,7 @@ void validateNameView()
 
     int len;
     byte name[100] = {};
-    
+
     len = getArgument(0, name);
     _validateName(name, len);
 }
@@ -240,7 +240,7 @@ void resolveView()
     byte name[100] = {};
     int len;
     HASH nameHash = {};
-    ADDRESS addr = { 0 };
+    ADDRESS addr = {0};
 
     len = getArgument(0, name);
     _hashName(name, len, nameHash);
@@ -257,7 +257,7 @@ void resolveFromHashView()
     CHECK_NUM_ARGS(1);
 
     HASH nameHash = {};
-    ADDRESS addr = { 0 };
+    ADDRESS addr = {0};
 
     getArgument(0, nameHash);
     _resolveFromHash(nameHash, addr);
@@ -342,7 +342,7 @@ void _loadValue(const HASH nameHash, Value *value)
     byte key[keyLen] = {};
 
     _constructKey(VALUE_STATE_KEY, VALUE_STATE_KEY_LEN, nameHash, sizeof(HASH), key);
-    storageLoad(key, keyLen, (byte*)value);
+    storageLoad(key, keyLen, (byte *)value);
 }
 
 void _storeValue(const HASH nameHash, const Value *value)
@@ -351,7 +351,7 @@ void _storeValue(const HASH nameHash, const Value *value)
     byte key[keyLen] = {};
 
     _constructKey(VALUE_STATE_KEY, VALUE_STATE_KEY_LEN, nameHash, sizeof(HASH), key);
-    storageStore(key, keyLen, (byte*)value, sizeof(Value));
+    storageStore(key, keyLen, (byte *)value, sizeof(Value));
 }
 
 void _loadCallbackArg(HASH arg)
@@ -401,18 +401,18 @@ void _resolveFromHash(const HASH nameHash, ADDRESS result)
     }
 }
 
-void _constructKey(const byte *prefix, int prefixLen,  const byte *arg, int argLen, byte *key)
+void _constructKey(const byte *prefix, int prefixLen, const byte *arg, int argLen, byte *key)
 {
     _copy(key, prefix, prefixLen);
     _copyRange(key, arg, prefixLen, 0, argLen);
 }
 
-int _constructAsyncCallData(const byte *funcName, int funcLen, 
-    const byte *arg, int argLen, byte *data)
+int _constructAsyncCallData(const byte *funcName, int funcLen,
+                            const byte *arg, int argLen, byte *data)
 {
     int i;
     int dataIndex = 0;
-    byte hexEncodedData[1000] = { };
+    byte hexEncodedData[1000] = {};
     const byte argDelimiter = '@';
 
     _copy(data, funcName, funcLen);
@@ -428,16 +428,16 @@ int _constructAsyncCallData(const byte *funcName, int funcLen,
     return dataIndex;
 }
 
-byte _halfByteToHexDigit(byte num) 
+byte _halfByteToHexDigit(byte num)
 {
-	if (num < 10) 
+    if (num < 10)
     {
-		return '0' + num;
-	} 
-    else 
+        return '0' + num;
+    }
+    else
     {
-		return 'a' + num - 0xa;
-	}
+        return 'a' + num - 0xa;
+    }
 }
 
 void _hexEncode(const byte *data, int dataLen, byte *result)
@@ -471,7 +471,7 @@ void callBack()
         value.state = None;
         _copy(value.address, ZERO_32_BYTE_ARRAY, sizeof(ADDRESS));
     }
-    
+
     _storeValue(nameHash, &value);
 
     _clearCallbackArg();
@@ -493,8 +493,8 @@ void *memcpy(void *dest, const void *src, unsigned long n)
 }
 
 // fake memset
-void* memset(void *dest, int c, unsigned long n);
-void* memset(void *dest, int c, unsigned long n)
+void *memset(void *dest, int c, unsigned long n);
+void *memset(void *dest, int c, unsigned long n)
 {
     int i;
     char *cdest = (char *)dest;

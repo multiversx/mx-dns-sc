@@ -13,11 +13,10 @@ permissions:
 jobs:
   contracts:
     name: Contracts
-    uses: ElrondNetwork/elrond-actions/.github/workflows/contracts.yml@v1
+    uses: multiversx/mx-sc-actions/.github/workflows/contracts.yml@v2
     with:
       rust-toolchain: nightly-2022-12-08
       vmtools-version: v1.4.60
-      extra-build-args: --ignore-eei-checks
       install-libtinfo5: true
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}
