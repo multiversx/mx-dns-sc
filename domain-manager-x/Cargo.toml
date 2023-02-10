@@ -1,0 +1,21 @@
+[package]
+name = "domain-manager-x"
+version = "0.0.0"
+authors = [ "Claudiu-Marcel Bruda <claudiu.bruda@multiversx.com>", "MultiversX <contact@multiversx.com>" ]
+edition = "2018"
+publish = false
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies.multiversx-sc]
+version = "0.39.4"
+
+[dependencies.common]
+path = "../common"
+
+[dependencies.base-usernames]
+path = "../base-usernames"
+
+[dev-dependencies.multiversx-sc-scenario]
+version = "0.39.4"

@@ -6,5 +6,7 @@ members = [
   "base-usernames/meta",
   "domain-auction",
   "domain-auction/meta",
+  "domain-manager-x",
+  "domain-manager-x/meta",
   "tools/name-miner",
 ]
