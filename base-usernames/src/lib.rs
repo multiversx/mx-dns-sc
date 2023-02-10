@@ -39,6 +39,8 @@ pub trait BaseUsernames: only_admin::OnlyAdminModule + pause::PauseModule {
         let domain = name_split::get_domain(&username);
         self.require_caller_is_domain_manager(domain);
 
+        // TODO: username validation (allowed characters etc.)
+
         let hash = self.hash(&username);
         self.username_status(hash).update(|status| {
             require!(

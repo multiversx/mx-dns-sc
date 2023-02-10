@@ -205,6 +205,8 @@ pub trait DomainAuction {
     fn reserve_domain(&self, domain: &ManagedBuffer) -> u64 {
         self.require_domain_not_in_blacklist(domain);
 
+        // TODO: domain name validation (allowed characters, max length etc.)
+
         self.domain_status(domain).update(|status| {
             require!(*status == DomainStatus::Available, "Domain not available");
             *status = DomainStatus::StartingAuction

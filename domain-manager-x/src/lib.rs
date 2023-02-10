@@ -24,6 +24,8 @@ pub trait DomainManagerX {
         let multiversx_suffix = ManagedBuffer::from(MULTIVERSX_SUFFIX);
         require!(domain == multiversx_suffix, "Domain must be .multiversX");
 
+        // TODO: username extra validation (if there are any extra rules not covered by base-usernames)
+
         let username_elrond = name_split::concat(prefix, ELROND_SUFFIX);
         let is_available: bool = self
             .base()
@@ -86,7 +88,9 @@ pub trait DomainManagerX {
                     .with_callback(self.callbacks().migrate_callback_write(username_multiversx))
                     .call_and_exit();
             }
-            ManagedAsyncCallResult::Err(_) => {}
+            ManagedAsyncCallResult::Err(_) => {
+                // TODO: error handling
+            }
         }
     }
 
@@ -103,7 +107,9 @@ pub trait DomainManagerX {
                     .async_call()
                     .call_and_exit();
             }
-            ManagedAsyncCallResult::Err(_) => {}
+            ManagedAsyncCallResult::Err(_) => {
+                // TODO: error handling
+            }
         }
     }
 
