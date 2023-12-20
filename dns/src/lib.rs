@@ -31,6 +31,11 @@ pub trait Dns: multiversx_sc_modules::features::FeaturesModule {
         self.registration_cost().set(registration_cost);
     }
 
+    #[endpoint]
+    fn upgrade(&self, registration_cost: &BigUint) {
+        self.init(registration_cost);
+    }
+
     fn validate_name_shard(&self, name_hash: &NameHash<Self::Api>) {
         require!(
             sibling_id(&name_hash.to_byte_array()) == self.get_own_sibling_id(),
